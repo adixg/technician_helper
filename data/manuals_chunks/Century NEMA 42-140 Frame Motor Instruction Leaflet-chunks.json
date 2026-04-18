@@ -1,0 +1,155 @@
+{
+  "source_md_file": "Century NEMA 42-140 Frame Motor Instruction Leaflet-with-image-refs.md",
+  "source_pdf_file": "Century NEMA 42-140 Frame Motor Instruction Leaflet.pdf",
+  "machine": "Century NEMA 42-140 Frame Motor",
+  "manufacturer": "Century",
+  "manual_type": "instruction_leaflet",
+  "num_sections": 17,
+  "chunks": [
+    {
+      "chunk_id": "chunk_0001",
+      "section_id": "section_001",
+      "section_title": "Preamble",
+      "chunk_index_within_section": 1,
+      "chunk_text": "![](Century NEMA 42-140 Frame Motor Instruction Leaflet_images/Century NEMA 42-140 Frame Motor Instruction Leaflet-picture-1.png)\n\nSeptember 2012 New Information\n\nRegal Beloit America, Inc. 531 North Fourth Street Tipp City, OH 45371\n\n1/20 through 5 HP Ratings\n\nNEMA 42, 48, 56 and 140 Frame Sizes",
+      "images": [
+        "Century NEMA 42-140 Frame Motor Instruction Leaflet_images/Century NEMA 42-140 Frame Motor Instruction Leaflet-picture-1.png"
+      ]
+    },
+    {
+      "chunk_id": "chunk_0002",
+      "section_id": "section_002",
+      "section_title": "Your Century Motor",
+      "chunk_index_within_section": 1,
+      "chunk_text": "A Century motor is a quality product.  Proper installation and maintenance will assure long life, safe operation and dependable service.\n\n1. Use a motor with a manual reset protector for applications such as compressors conveyers, farm equipment, power tools, etc. where automatic restarting could be hazardous.",
+      "images": []
+    },
+    {
+      "chunk_id": "chunk_0003",
+      "section_id": "section_003",
+      "section_title": "Inspect Before Installation",
+      "chunk_index_within_section": 1,
+      "chunk_text": "1. Examine motor thoroughly to be sure it was not damaged in shipment.\n2. Check the motor shaft which should rotate freely when turned by hand.\n3. Check nameplate rating. Voltage and frequency must match the power source. Motor hp, speed and rotation must be suitable for the intended use.\n4. If wet, damp or removed from a damp location, allow motor to dry before installing.",
+      "images": []
+    },
+    {
+      "chunk_id": "chunk_0004",
+      "section_id": "section_004",
+      "section_title": "Safety Precautions to Avoid Personal Injury",
+      "chunk_index_within_section": 1,
+      "chunk_text": "1. Disconnect power source before working on or near a motor or its connected load.\n2. Remove shaft key before energizing or bench testing a motor with keyway and key.\n3. Install all wiring, fusing and grounding in accordance with National Electrical Code and local requirements.\n4. Wire size from service box to power supply outlet for motor should never be smaller than #14 AWG.\n5. Keep all parts of body and loose clothing clear of belts, pulleys and other exposed moving parts at all times.\n6. Cover or guard all moving parts that could be hazardous.\n7. Be careful when touching a motor that could be at or above its normal operating temperature.  The external motor surface could be hot enough to be painful or to cause injury.\n8. Do not insert any object into motor at any time.\n9. Do not operate motor near flammable or explosive material unless UL listed for hazardous locations.\n10. Do not use a motor with an automatic-reset thermal protector where automatic restarting of the motor could be hazardous.",
+      "images": []
+    },
+    {
+      "chunk_id": "chunk_0005",
+      "section_id": "section_005",
+      "section_title": "Thermal Protection",
+      "chunk_index_within_section": 1,
+      "chunk_text": "Use a 'Thermally Protected' motor wherever required by safety regulations or an Underwriters' Laboratories Standard, or where severe overloading, jamming or other abnormal operating conditions may occur.\n\n2. A motor with a manual reset protector will have a red button which will pop out when the protector operates. After about a fiveminute cool-down period, the protector can be reset by depressing the red button.\n3. Frequent operation of the thermal protector is an indication of an abnormal condition that should be corrected to avoid premature motor failure.",
+      "images": []
+    },
+    {
+      "chunk_id": "chunk_0006",
+      "section_id": "section_006",
+      "section_title": "Location",
+      "chunk_index_within_section": 1,
+      "chunk_text": "1. Open motors are intended for use where the environment is relatively clean, dry and noncorrosive.\n2. Totally Enclosed motors are intended for use in dirty, damp or oily locations.\n3. Explosion-Proof motors are required for use in hazardous locations and specifically where the atmosphere or motor environment may be explosive.\n4. Ambient temperature around the motor should not exceed nameplate rating.\n5. If installation is outdoors, protect motor with a cover but install cover so that it does not restrict airflow around motor.\n6. Do not operate motor in a confined nonventilated area.",
+      "images": []
+    },
+    {
+      "chunk_id": "chunk_0007",
+      "section_id": "section_007",
+      "section_title": "Installation",
+      "chunk_index_within_section": 1,
+      "chunk_text": "1. Recheck motor nameplate to be sure that motor type and motor hp, voltage and speed rating are suitable for the intended use.\n2. The words 'Air Over' on the nameplate indicate that the motor is suitable for use only on a direct-drive fan or blower where the motor is mounted in the air stream. Other usage of such a motor could cause overheating and premature failure.\n3. Check direction of rotation before connecting the motor to the load by clamping motor securely and them momentarily applying power to the motor terminals and observing shaft movement.\n4. Fasten motor securely to a rigid base, mounting pad or other means for mounting the motor using the largest bolts that will fit through the mounting holes.\n5. Use only the capacitor rating specified for the motor when one is required.\n6. Direct-Drive Applications:\n- a. Locate fan, blower or other directconnected load for proper running clearance and then fasten securely",
+      "images": []
+    },
+    {
+      "chunk_id": "chunk_0008",
+      "section_id": "section_008",
+      "section_title": "General Purpose and Specialty Motors",
+      "chunk_index_within_section": 1,
+      "chunk_text": "- b. Align shafts accurately when a coupling is used and then fasten coupling securely to both the motor shaft and the driven shaft.\n- c. Clean all mating surfaces if motor to be face mounted. The assembly should turn freely when parts are properly seated and aligned.\n7. Belt-Drive Applications:\n- a. Use pulley size that will produce the desired machine speed without overloading the motor.\n- b. Mount motor pulley as close as possible to bearing housing to minimize bearing loading, but allow sufficient clearance for rotor end play.\n- c. Align pulleys carefully, then fasten securely.\n- d. Mount a sleeve-bearing motor so that the direction of belt pull is opposite the oil well holes- (or bearing window) to avoid premature bearing failure.\n- e. Tighten belt only enough to prevent slippage. A properly adjusted belt will deflect about ½ inch when light finger pressure is applied midway between the pulleys.",
+      "images": []
+    },
+    {
+      "chunk_id": "chunk_0009",
+      "section_id": "section_009",
+      "section_title": "Electrical Connections",
+      "chunk_index_within_section": 1,
+      "chunk_text": "1. Disconnect power source and tag or lock open before starting.\n2. Refer to connection diagram on nameplate or on inside of terminal cover to determine proper connections for the voltage source and to obtain the desired speed and direction of rotation. (Rotation of a three-phase motor can be reversed by interchanging any two line leads.)\n3. Use a separate branch circuit with adequate capacity for each motor to keep voltage drop to a minimum and to avoid reduced performance and possible overheating of the motor.\n4. Grounding:\n- a. Connect motor frame to the electrical service ground in accordance with local r National Electrical Code requirements.\n- b. Use the green lead or the green screw in the conduit box area, depending on which is provided, for the grounding connection.\n- c. Use a size 16AWG or larger wire for grounding.\n\n![](Century NEMA 42-140 Frame Motor Instruction Leaflet_images/Century NEMA 42-140 Frame Motor Instruction Leaflet-picture-2.png)\n\n- d. Connect a separate ground wire to the driven equipment unless there is solid metal-to-metal contact between the motor and the equipment housing.\n5. Insulate all unused leads on a motor with individual leads to avoid the possibility of electrical shock or motor burnout.",
+      "images": [
+        "Century NEMA 42-140 Frame Motor Instruction Leaflet_images/Century NEMA 42-140 Frame Motor Instruction Leaflet-picture-2.png"
+      ]
+    },
+    {
+      "chunk_id": "chunk_0010",
+      "section_id": "section_010",
+      "section_title": "Start-up",
+      "chunk_index_within_section": 1,
+      "chunk_text": "1. Replace the terminal box cover (if motor has one) before reconnecting the power source.\n2. Check direction of rotation.  Stop motor and then reconnect as necessary if rotation is not correct.\n3. Check operation of motor to be sure it comes up to speed, runs smoothly and is not overloaded.\n4. Shut off power immediately if there is a problem and determine source of trouble before restarting.",
+      "images": []
+    },
+    {
+      "chunk_id": "chunk_0011",
+      "section_id": "section_011",
+      "section_title": "Warranty Period",
+      "chunk_index_within_section": 1,
+      "chunk_text": "All Century® motors are warranted against defects in materials and workmanship for a period of twelve (12) months from the date of installation or twenty-four months (24) from the date of manufacture, whichever comes first except for E-Plus®3 Integral Horsepower Motors and HeatMaster® Condenser Fan Motors which are warranted for twenty-four months (24) from date of installation and thirty-six (36) months from date of manufacture, whichever comes first.",
+      "images": []
+    },
+    {
+      "chunk_id": "chunk_0012",
+      "section_id": "section_012",
+      "section_title": "Limitation of Remedy",
+      "chunk_index_within_section": 1,
+      "chunk_text": "In the event of a breach of the warranty within the applicable warranty period, Century shall have the option of (1) repairing such motor; (2) supplying an identical or substantially similar replacement motor FOB, Century's factory; or (3) refunding or giving credit for the purchase price of such motor.\n\nThe remedy set forth above shall be the sole and exclusive remedy for the motors failing within the applicable warranty period.  Century shall not be liable for any lost profits, loss of use, or any other consequential, special or incidental damages.",
+      "images": []
+    },
+    {
+      "chunk_id": "chunk_0013",
+      "section_id": "section_013",
+      "section_title": "DISCLAIMER OF IMPLIED WARRANTIES",
+      "chunk_index_within_section": 1,
+      "chunk_text": "EXCEPT AS MAY BE REQUIRED UNDER APPLICABLE LAW, THE LIMITED WARRANTY SET FORTH ABOVE IS THE EXCLUSIVE WARRANTY PROVIDED WITH THE MOTORS.  ALL OTHER WARRANTIES, WHETERER WRITTEN OR VERBAL, EXPRESSED OR IMPLIED, INCLUDING THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE EXPRESSLY DISCLAIMED BY Regal Beloit EPC, Inc.",
+      "images": []
+    },
+    {
+      "chunk_id": "chunk_0014",
+      "section_id": "section_014",
+      "section_title": "Conditions of Warranty",
+      "chunk_index_within_section": 1,
+      "chunk_text": "This limited warranty shall be void and of no effect if:\n\n1. The motor has been subjected to improper handling, storage or installation, or subject to abuse or unauthorized repairs;\n2. The motor was not suitable for the application or operated above its rated load; or\n3. The motor was subject to water damage including motor bearing failures resulting from pump seal failures.",
+      "images": []
+    },
+    {
+      "chunk_id": "chunk_0015",
+      "section_id": "section_015",
+      "section_title": "Authorized Location",
+      "chunk_index_within_section": 1,
+      "chunk_text": "Defective motors which have failed during the applicable warranty period must be returned freight prepaid to a Century's authorized distributor. Call 800-672-6495.\n\nA Regal Brand\n\n![](Century NEMA 42-140 Frame Motor Instruction Leaflet_images/Century NEMA 42-140 Frame Motor Instruction Leaflet-picture-3.png)",
+      "images": [
+        "Century NEMA 42-140 Frame Motor Instruction Leaflet_images/Century NEMA 42-140 Frame Motor Instruction Leaflet-picture-3.png"
+      ]
+    },
+    {
+      "chunk_id": "chunk_0016",
+      "section_id": "section_016",
+      "section_title": "Maintenance",
+      "chunk_index_within_section": 1,
+      "chunk_text": "CAUTION: Always disconnect power source before working on or near a motor or its connected load.\n\n1. Motor may require periodic cleaning to prevent the possibility of overheating due to an accumulation of dust and dirt on the windings or on the motor exterior.\n2. Sleeve-Bearing Motors lubricated for life require no re-oiling and are constructed without re-oiling tubing. For motors with reoiling tubes or ports, use the following guidelines.\n- a. Re-oil annually after the second year of service to extend bearing life for normal duty.\n- b. Re-oil every two years for light intermittent duty and at least every five years for light occasional duty.\n- c. Add 15 to 20 drops of electric motor oil or an SE grade of SAE 20 nondetergent, motor oil to each bearing when re-oiling.\n3.  Ball bearing motors are factory lubricated and require no additional lubrication.\n\nStatement of Warranty Policy\n\n![](Century NEMA 42-140 Frame Motor Instruction Leaflet_images/Century NEMA 42-140 Frame Motor Instruction Leaflet-picture-4.png)",
+      "images": [
+        "Century NEMA 42-140 Frame Motor Instruction Leaflet_images/Century NEMA 42-140 Frame Motor Instruction Leaflet-picture-4.png"
+      ]
+    },
+    {
+      "chunk_id": "chunk_0017",
+      "section_id": "section_017",
+      "section_title": "Caution",
+      "chunk_index_within_section": 1,
+      "chunk_text": "1. If motor gets wet, allow it to dry thoroughly before using.\n2. Consult a qualified electrician if in doubt how to ground or connect the motor.\n3. Any of the following could result in motor damage or failure and could be interpreted as abuse or misapplication of the motor and thus void any warranty that may be provided.\n- a. Connection to power source other than the voltage and frequency specified on the nameplate.\n- b. Incorrect connection.\n- c. Excessive or improper lubrication.\n- d. Dropping, carrying by the leads or otherwise mishandling the motor.\n- e. Insertion of an object into motor.\n- f. Misapplication or improper use.\n- g. Improper installation, excessive belt tension, etc.\n- h. Failure to insulate unused motor leads.\n- i. Use of a capacitor different than the rating specified.\n\nWhen writing for information, include all information printed on the nameplate and send to:\n\nRegal Beloit America, Inc. 531 North Fourth Street Tipp City, Ohio 45371",
+      "images": []
+    }
+  ],
+  "num_chunks": 17
+}
