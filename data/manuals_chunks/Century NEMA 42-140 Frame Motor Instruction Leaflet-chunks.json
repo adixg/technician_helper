@@ -1,9 +1,9 @@
 {
   "source_md_file": "Century NEMA 42-140 Frame Motor Instruction Leaflet-with-image-refs.md",
   "source_pdf_file": "Century NEMA 42-140 Frame Motor Instruction Leaflet.pdf",
-  "machine": "Century NEMA 42-140 Frame Motor",
-  "manufacturer": "Century",
-  "manual_type": "instruction_leaflet",
+  "machine": null,
+  "manufacturer": null,
+  "manual_type": null,
   "num_sections": 17,
   "chunks": [
     {

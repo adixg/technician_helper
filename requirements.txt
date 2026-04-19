@@ -1,0 +1,6 @@
+torch==2.2.2
+sentence-transformers
+weaviate-client
+python-dotenv
+streamlit
+docling
