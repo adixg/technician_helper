@@ -1,16 +1,16 @@
-import json
-import pandas as pd
+# Usage:
+# python create_incident_json.py data/logs/predictive-maintenance-incident-log.csv
 
-CSV_PATH = "data/logs/predictive-maintenance-incident-log.csv"
-JSON_PATH = "data/logs/incident_chunks.json"
+import json
+import argparse
+from pathlib import Path
+import pandas as pd
 
 
 def clean_value(v):
-    # Convert pandas missing values to None
     if pd.isna(v):
         return None
 
-    # Normalize strings
     if isinstance(v, str):
         v = v.strip()
         if v == "":
@@ -20,11 +20,6 @@ def clean_value(v):
 
 
 def to_rfc3339_utc(value):
-    """
-    Convert a datetime-like string to RFC3339 format with timezone.
-    Example:
-        2024-05-09T10:50:12 -> 2024-05-09T10:50:12Z
-    """
     if value is None:
         return None
 
@@ -32,7 +27,6 @@ def to_rfc3339_utc(value):
     if pd.isna(dt):
         return None
 
-    # Format like 2024-05-09T10:50:12Z
     return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
@@ -52,13 +46,13 @@ def to_int_or_none(value):
     if value is None:
         return None
     try:
-        val = int(float(value))
-        return val
+        return int(float(value))
     except Exception:
         return None
 
 
 def build_incident_text(row: dict) -> str:
+
     sentences = []
 
     intro_parts = []
@@ -73,10 +67,13 @@ def build_incident_text(row: dict) -> str:
         intro_parts.append(f"at {row['location']}")
 
     machine_phrase = []
+
     if row.get("machine_id"):
         machine_phrase.append(str(row["machine_id"]))
+
     if row.get("machine_type"):
         machine_phrase.append(f"a {row['machine_type']}")
+
     if machine_phrase:
         intro_parts.append(f"on machine {', '.join(machine_phrase)}")
 
@@ -93,13 +90,18 @@ def build_incident_text(row: dict) -> str:
         sentences.append(f"Failure description: {row['failure_description']}.")
 
     if row.get("sensor_id") or row.get("sensor_type") or row.get("sensor_value") is not None:
+
         sensor_parts = ["Sensor"]
+
         if row.get("sensor_id"):
             sensor_parts.append(str(row["sensor_id"]))
+
         if row.get("sensor_type"):
             sensor_parts.append(f"of type {row['sensor_type']}")
+
         if row.get("sensor_value") is not None:
             sensor_parts.append(f"recorded value {row['sensor_value']}")
+
         sentences.append(" ".join(sensor_parts) + ".")
 
     if row.get("maintenance_type"):
@@ -137,18 +139,20 @@ def build_incident_text(row: dict) -> str:
     return " ".join(sentences)
 
 
-def csv_to_incident_json(csv_path: str, json_path: str) -> list[dict]:
-    # If file is tab-separated, change to: pd.read_csv(csv_path, sep="\t")
-    df = pd.read_csv(csv_path)
+def csv_to_incident_json(csv_path: Path, json_path: Path, delimiter: str):
 
-    # Clean raw values first
+    df = pd.read_csv(csv_path, sep=delimiter)
+
     df = df.map(clean_value)
 
     records = []
+
     for _, row in df.iterrows():
+
         row_dict = row.to_dict()
 
         record = {
+
             "chunk_id": f"incident_{row_dict['incident_id']}",
             "source": "incident_log",
             "record_type": "maintenance_incident",
@@ -158,9 +162,13 @@ def csv_to_incident_json(csv_path: str, json_path: str) -> list[dict]:
             "machine_type": row_dict.get("machine_type"),
             "location": row_dict.get("location"),
 
-            # Convert date fields to RFC3339
-            "incident_datetime": to_rfc3339_utc(row_dict.get("incident_datetime")),
-            "resolved_datetime": to_rfc3339_utc(row_dict.get("resolved_datetime")),
+            "incident_datetime": to_rfc3339_utc(
+                row_dict.get("incident_datetime")
+            ),
+
+            "resolved_datetime": to_rfc3339_utc(
+                row_dict.get("resolved_datetime")
+            ),
 
             "incident_type": row_dict.get("incident_type"),
             "failure_code": row_dict.get("failure_code"),
@@ -168,30 +176,80 @@ def csv_to_incident_json(csv_path: str, json_path: str) -> list[dict]:
 
             "sensor_id": row_dict.get("sensor_id"),
             "sensor_type": row_dict.get("sensor_type"),
-            "sensor_value": to_float_or_none(row_dict.get("sensor_value")),
+            "sensor_value": to_float_or_none(
+                row_dict.get("sensor_value")
+            ),
 
             "maintenance_type": row_dict.get("maintenance_type"),
             "maintenance_action": row_dict.get("maintenance_action"),
 
-            "downtime_minutes": to_int_or_none(row_dict.get("downtime_minutes")),
+            "downtime_minutes": to_int_or_none(
+                row_dict.get("downtime_minutes")
+            ),
+
             "reported_by": row_dict.get("reported_by"),
             "resolution_status": row_dict.get("resolution_status"),
-            "cost_estimate": to_float_or_none(row_dict.get("cost_estimate")),
+            "cost_estimate": to_float_or_none(
+                row_dict.get("cost_estimate")
+            ),
+
             "root_cause": row_dict.get("root_cause"),
         }
 
         record["text"] = build_incident_text(record)
+
         records.append(record)
+
+    json_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=2, ensure_ascii=False)
 
     print(f"Saved {len(records)} records to {json_path}")
-    return records
 
 
 def main():
-    csv_to_incident_json(CSV_PATH, JSON_PATH)
+
+    parser = argparse.ArgumentParser(
+        description="Convert incident CSV into chunked JSON records."
+    )
+
+    parser.add_argument(
+        "csv_path",
+        type=str,
+        help="Path to incident CSV file"
+    )
+
+    parser.add_argument(
+        "--output_json",
+        type=str,
+        default="data/logs/incident_chunks.json",
+        help="Output JSON path"
+    )
+
+    parser.add_argument(
+        "--delimiter",
+        type=str,
+        default=",",
+        help="CSV delimiter (default: comma)"
+    )
+
+    args = parser.parse_args()
+
+    csv_path = Path(args.csv_path)
+
+    if not csv_path.exists():
+        raise FileNotFoundError(
+            f"CSV file not found: {csv_path}"
+        )
+
+    json_path = Path(args.output_json)
+
+    csv_to_incident_json(
+        csv_path=csv_path,
+        json_path=json_path,
+        delimiter=args.delimiter
+    )
 
 
 if __name__ == "__main__":

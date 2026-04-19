@@ -1,12 +1,14 @@
+# Usage:
+# python .\chunks_json_gen.py ".\data\manuals_sections\Standard Induction Motors operation Manual-sections.json"
+
 import json
 import re
+import argparse
 from pathlib import Path
 
-SECTIONS_JSON_PATH = Path(r"data/manuals_sections/Century NEMA 42-140 Frame Motor Instruction Leaflet-sections.json")
 
-# Chunking controls
-MAX_CHARS = 1000000
-MIN_CHARS = 1
+DEFAULT_MAX_CHARS = 1000000
+DEFAULT_MIN_CHARS = 1
 
 
 def split_into_paragraphs(text: str):
@@ -14,27 +16,20 @@ def split_into_paragraphs(text: str):
     if not text:
         return []
 
-    # Split on blank lines first
     paras = re.split(r"\n\s*\n", text)
     paras = [p.strip() for p in paras if p.strip()]
     return paras
 
 
 def split_long_paragraph(paragraph: str, max_chars: int):
-    """
-    If a paragraph is too long, split it by sentence boundaries.
-    Falls back to hard splitting if needed.
-    """
     paragraph = paragraph.strip()
     if len(paragraph) <= max_chars:
         return [paragraph]
 
-    # Sentence-ish split
     sentence_parts = re.split(r'(?<=[.!?])\s+(?=[A-Z0-9(\-"\'])', paragraph)
     sentence_parts = [s.strip() for s in sentence_parts if s.strip()]
 
     if len(sentence_parts) <= 1:
-        # Fallback: hard split
         chunks = []
         start = 0
         while start < len(paragraph):
@@ -62,9 +57,6 @@ def split_long_paragraph(paragraph: str, max_chars: int):
 
 
 def chunk_section_text(text: str, max_chars: int, min_chars: int):
-    """
-    Chunk by paragraphs first, then by sentences if a paragraph is too long.
-    """
     paragraphs = split_into_paragraphs(text)
     if not paragraphs:
         return []
@@ -88,7 +80,6 @@ def chunk_section_text(text: str, max_chars: int, min_chars: int):
     if current.strip():
         chunks.append(current.strip())
 
-    # Merge tiny trailing chunks when possible
     merged = []
     i = 0
     while i < len(chunks):
@@ -104,7 +95,7 @@ def chunk_section_text(text: str, max_chars: int, min_chars: int):
     return merged
 
 
-def build_chunks(section_doc: dict):
+def build_chunks(section_doc: dict, max_chars: int, min_chars: int):
     out = {
         "source_md_file": section_doc.get("source_md_file"),
         "source_pdf_file": section_doc.get("source_pdf_file"),
@@ -128,11 +119,10 @@ def build_chunks(section_doc: dict):
 
         text_chunks = chunk_section_text(
             text=section_text,
-            max_chars=MAX_CHARS,
-            min_chars=MIN_CHARS
+            max_chars=max_chars,
+            min_chars=min_chars
         )
 
-        # If section has no text but does have images, keep one empty-ish chunk
         if not text_chunks and section_images:
             text_chunks = [""]
 
@@ -151,26 +141,95 @@ def build_chunks(section_doc: dict):
     return out
 
 
-def main():
-    with open(SECTIONS_JSON_PATH, "r", encoding="utf-8") as f:
+def generate_chunks_json(
+    sections_json_path: Path,
+    output_dir: Path,
+    max_chars: int,
+    min_chars: int,
+    progress_callback=None,
+):
+    def update(message: str, pct: int):
+        if progress_callback is not None:
+            progress_callback("chunks", message, pct)
+
+    update("Reading sections JSON...", 55)
+
+    with open(sections_json_path, "r", encoding="utf-8") as f:
         section_doc = json.load(f)
 
-    chunk_doc = build_chunks(section_doc)
+    update("Building chunks from sections...", 60)
 
-    # Define output directory
-    OUTPUT_DIR = Path("./data/manuals_chunks")
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    chunk_doc = build_chunks(
+        section_doc=section_doc,
+        max_chars=max_chars,
+        min_chars=min_chars
+    )
 
-    # Build output filename
-    out_filename = SECTIONS_JSON_PATH.stem.replace("-sections", "-chunks") + ".json"
-    out_path = OUTPUT_DIR / out_filename
+    update("Creating output directory...", 65)
 
-    # Save JSON
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    out_filename = sections_json_path.stem.replace("-sections", "-chunks") + ".json"
+    out_path = output_dir / out_filename
+
+    update("Writing chunks JSON...", 67)
+
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(chunk_doc, f, indent=2, ensure_ascii=False)
 
+    update(f"Chunks JSON created with {chunk_doc['num_chunks']} chunks.", 68)
+
     print(f"Saved chunks JSON to: {out_path}")
     print(f"Total chunks: {chunk_doc['num_chunks']}")
+    return out_path
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Convert sectioned manual JSON into chunked JSON."
+    )
+
+    parser.add_argument(
+        "sections_json_path",
+        type=str,
+        help="Path to the input sections JSON file"
+    )
+
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default="./data/manuals_chunks",
+        help="Directory to save the output chunks JSON"
+    )
+
+    parser.add_argument(
+        "--max_chars",
+        type=int,
+        default=DEFAULT_MAX_CHARS,
+        help="Maximum characters per chunk"
+    )
+
+    parser.add_argument(
+        "--min_chars",
+        type=int,
+        default=DEFAULT_MIN_CHARS,
+        help="Minimum characters for small-chunk merging"
+    )
+
+    args = parser.parse_args()
+
+    sections_json_path = Path(args.sections_json_path)
+    if not sections_json_path.exists():
+        raise FileNotFoundError(f"Sections JSON file not found: {sections_json_path}")
+
+    output_dir = Path(args.output_dir)
+
+    generate_chunks_json(
+        sections_json_path=sections_json_path,
+        output_dir=output_dir,
+        max_chars=args.max_chars,
+        min_chars=args.min_chars,
+    )
 
 
 if __name__ == "__main__":

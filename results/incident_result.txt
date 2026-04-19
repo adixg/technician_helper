@@ -1,0 +1,147 @@
+Top incident matches:
+
+Result 1
+--------------------------------------------------
+cost_estimate: 4500.5
+downtime_minutes: 120
+resolved_datetime: 2024-05-02 10:20:15+00:00
+sensor_value: None
+incident_type: machine_failure
+failure_code: F103
+sensor_id: NaN
+text: Incident INCID001 occurred on 2024-05-02T08:15:27Z at Plant A - East Bay on machine MC-1001A, a CNC Lathe Model X. Incident type: machine_failure. Failure code: F103. Failure description: Spindle motor overheated causing rapid shutdown.. Sensor nan of type nan. Maintenance type: nan. Maintenance action: nan. Downtime was 120 minutes. Reported by sys_auto_01. The incident was resolved on 2024-05-02T10:20:15Z with status resolved. Estimated cost was 4500.5. Root cause: Inadequate cooling due to blocked air filter..
+maintenance_action: NaN
+record_type: maintenance_incident
+incident_datetime: 2024-05-02 08:15:27+00:00
+machine_type: CNC Lathe Model X
+sensor_type: NaN
+source: incident_log
+resolution_status: resolved
+maintenance_type: NaN
+machine_id: MC-1001A
+location: Plant A - East Bay
+failure_description: Spindle motor overheated causing rapid shutdown.
+incident_id: INCID001
+chunk_id: incident_INCID001
+reported_by: sys_auto_01
+root_cause: Inadequate cooling due to blocked air filter.
+
+Result 2
+--------------------------------------------------
+cost_estimate: 3100.5
+downtime_minutes: 90
+incident_type: machine_failure
+sensor_value: None
+resolved_datetime: 2024-04-02 09:45:07+00:00
+failure_code: F102
+sensor_id: NaN
+text: Incident INC-5102A7F occurred on 2024-04-02T08:12:15Z at Plant South Bay on machine MAC-10B4C8D2, a CNC Lathe Model X21. Incident type: machine_failure. Failure code: F102. Failure description: Unexpected spindle stall detected during production cycle.. Sensor nan of type nan. Maintenance type: nan. Maintenance action: nan. Downtime was 90 minutes. Reported by jclark. The incident was resolved on 2024-04-02T09:45:07Z with status resolved. Estimated cost was 3100.5. Root cause: Spindle lubrication system failure..
+maintenance_action: NaN
+incident_datetime: 2024-04-02 08:12:15+00:00
+record_type: maintenance_incident
+machine_type: CNC Lathe Model X21
+sensor_type: NaN
+source: incident_log
+resolution_status: resolved
+machine_id: MAC-10B4C8D2
+maintenance_type: NaN
+failure_description: Unexpected spindle stall detected during production cycle.
+location: Plant South Bay
+incident_id: INC-5102A7F
+chunk_id: incident_INC-5102A7F
+reported_by: jclark
+root_cause: Spindle lubrication system failure.
+
+Result 3
+--------------------------------------------------
+cost_estimate: 430.0
+downtime_minutes: 55
+resolved_datetime: 2024-04-21 15:16:06+00:00
+incident_type: maintenance_event
+sensor_value: None
+failure_code: NaN
+sensor_id: NaN
+text: Incident INC-9B5C8A3F occurred on 2024-04-21T14:21:19Z at Plant South Bay on machine MAC-10B4C8D2, a CNC Lathe Model X21. Incident type: maintenance_event. Failure code: nan. Failure description: nan. Sensor nan of type nan. Maintenance type: predictive. Maintenance action: Recalibrated spindle drive based on predictive wear.. Downtime was 55 minutes. Reported by jbrown. The incident was resolved on 2024-04-21T15:16:06Z with status resolved. Estimated cost was 430.0. Root cause: Wear detected in drive bearings..
+maintenance_action: Recalibrated spindle drive based on predictive wear.
+incident_datetime: 2024-04-21 14:21:19+00:00
+record_type: maintenance_incident
+sensor_type: NaN
+machine_type: CNC Lathe Model X21
+source: incident_log
+resolution_status: resolved
+machine_id: MAC-10B4C8D2
+maintenance_type: predictive
+location: Plant South Bay
+failure_description: NaN
+incident_id: INC-9B5C8A3F
+chunk_id: incident_INC-9B5C8A3F
+reported_by: jbrown
+root_cause: Wear detected in drive bearings.
+
+Result 4
+--------------------------------------------------
+cost_estimate: 900.0
+downtime_minutes: 50
+resolved_datetime: 2024-04-07 15:00:05+00:00
+incident_type: machine_failure
+sensor_value: None
+failure_code: F121
+sensor_id: NaN
+text: Incident INC-51C8E3B7 occurred on 2024-04-07T14:10:23Z at Plant South Bay on machine MAC-10B4C8D2, a CNC Lathe Model X21. Incident type: machine_failure. Failure code: F121. Failure description: Coolant flow disruption detected in spindle.. Sensor nan of type nan. Maintenance type: nan. Maintenance action: nan. Downtime was 50 minutes. Reported by system_alert. The incident was resolved on 2024-04-07T15:00:05Z with status resolved. Estimated cost was 900.0. Root cause: Partial clog in coolant line..
+maintenance_action: NaN
+record_type: maintenance_incident
+incident_datetime: 2024-04-07 14:10:23+00:00
+machine_type: CNC Lathe Model X21
+sensor_type: NaN
+source: incident_log
+resolution_status: resolved
+machine_id: MAC-10B4C8D2
+maintenance_type: NaN
+location: Plant South Bay
+failure_description: Coolant flow disruption detected in spindle.
+incident_id: INC-51C8E3B7
+chunk_id: incident_INC-51C8E3B7
+reported_by: system_alert
+root_cause: Partial clog in coolant line.
+
+Result 5
+--------------------------------------------------
+cost_estimate: 1100.0
+downtime_minutes: 60
+incident_type: machine_failure
+sensor_value: None
+resolved_datetime: 2024-05-11 13:13:05+00:00
+failure_code: F145
+sensor_id: NaN
+text: Incident INCID011 occurred on 2024-05-11T12:11:41Z at Plant A - East Bay on machine MC-1001A, a CNC Lathe Model X. Incident type: machine_failure. Failure code: F145. Failure description: Coolant pump failed, resulting in overheat warning.. Sensor nan of type nan. Maintenance type: nan. Maintenance action: nan. Downtime was 60 minutes. Reported by tech_joseph. The incident was resolved on 2024-05-11T13:13:05Z with status closed. Estimated cost was 1100.0. Root cause: Pump motor seized from lack of lubrication..
+maintenance_action: NaN
+incident_datetime: 2024-05-11 12:11:41+00:00
+record_type: maintenance_incident
+sensor_type: NaN
+machine_type: CNC Lathe Model X
+source: incident_log
+resolution_status: closed
+machine_id: MC-1001A
+maintenance_type: NaN
+location: Plant A - East Bay
+failure_description: Coolant pump failed, resulting in overheat warning.
+reported_by: tech_joseph
+chunk_id: incident_INCID011
+incident_id: INCID011
+root_cause: Pump motor seized from lack of lubrication.
+
+
+[STDERR]
+C:\Users\User\miniconda3\envs\tractian\Lib\site-packages\authlib\_joserfc_helpers.py:8: AuthlibDeprecationWarning: authlib.jose module is deprecated, please use joserfc instead.
+It will be compatible before version 2.0.0.
+  from authlib.jose import ECKey
+
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]
+Loading weights: 100%|##########| 103/103 [00:00<00:00, 9352.35it/s]
+[1mBertModel LOAD REPORT[0m from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  | 
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.

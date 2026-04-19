@@ -1,0 +1,47 @@
+{
+  "likely_causes": [
+    {
+      "cause": "spindle lubrication system failure",
+      "why": "Incident with failure code F102 (similar machine type) had root cause of spindle lubrication system failure, which can lead to vibration and bearing noise."
+    },
+    {
+      "cause": "drive bearing wear",
+      "why": "Incident with failure code F121 (similar machine type) had root cause of wear detected in drive bearings, which can produce abnormal noise and vibration."
+    }
+  ],
+  "recommended_checks": [
+    "inspect spindle lubrication system for leaks or blockages",
+    "check bearing condition and lubrication levels",
+    "verify coolant flow to spindle"
+  ],
+  "manual_references": [
+    {
+      "section_title": "Caution",
+      "source_pdf": "Century NEMA 42-140 Frame Motor Instruction Leaflet.pdf",
+      "reason": "Manual warns about improper lubrication and its potential to cause motor damage, relevant to observed symptoms."
+    }
+  ],
+  "similar_incidents": [
+    {
+      "machine_id": "MAC-10B4C8D2",
+      "fault_code": "F102",
+      "summary": "Spindle lubrication system failure caused vibration and required maintenance action."
+    },
+    {
+      "machine_id": "MAC-10B4C8D2",
+      "fault_code": "F121",
+      "summary": "Coolant flow disruption detected in spindle, resolved with maintenance action."
+    }
+  ],
+  "clarifying_questions": [
+    "Has the lubrication system been inspected recently?",
+    "Are there any recent changes to coolant or lubricant specifications?"
+  ],
+  "escalation_needed": false,
+  "escalation_reason": "",
+  "confidence": "medium",
+  "evidence_gaps": [
+    "Missing direct correlation between fault code E102 and specific incident root causes",
+    "Limited manual guidance specific to fault code E102"
+  ]
+}
