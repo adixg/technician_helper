@@ -11,6 +11,7 @@ import weaviate
 
 DEFAULT_COLLECTION_NAME = "ManualChunk"
 DEFAULT_EMBED_MODEL_NAME = "Qwen/Qwen3-Embedding-0.6B"
+# DEFAULT_EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 
 load_dotenv()

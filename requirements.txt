@@ -1,6 +1,8 @@
-torch==2.2.2
-sentence-transformers
-weaviate-client
-python-dotenv
 streamlit
+pandas
+numpy
+python-dotenv
+weaviate-client
+sentence-transformers
+torch==2.3.0
 docling
