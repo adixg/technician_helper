@@ -313,7 +313,7 @@ def run_rag_fusion(
     manual_paths: Optional[List[str]] = None,
     log_paths: Optional[List[str]] = None,
     stage_callback: Optional[Callable[[str, str], None]] = None,
-    model: str = "Qwen/Qwen3-8B",
+    model: str = "sentence-transformers/all-MiniLM-L6-v2",
     temperature: float = 0.0,
     max_tokens: int = 900,
     top_k_manual: int = 3,

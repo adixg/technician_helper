@@ -10,8 +10,8 @@ import weaviate
 
 
 DEFAULT_COLLECTION_NAME = "ManualChunk"
-DEFAULT_EMBED_MODEL_NAME = "Qwen/Qwen3-Embedding-0.6B"
-# DEFAULT_EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+# DEFAULT_EMBED_MODEL_NAME = "Qwen/Qwen3-Embedding-0.6B"
+DEFAULT_EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 
 load_dotenv()
@@ -78,7 +78,11 @@ def upload_manual_chunks(
 
     update("Connecting to Weaviate...", 91)
 
-    client = weaviate.connect_to_local()
+    client = weaviate.connect_to_local(
+        host="localhost",
+        port=8080,
+        grpc_port=50051
+    )
 
     try:
         collection = client.collections.get(collection_name)

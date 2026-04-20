@@ -13,7 +13,8 @@ from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 
 COLLECTION_NAME = "ManualChunk"
-EMBED_MODEL_NAME = "Qwen/Qwen3-Embedding-0.6B"
+EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+# EMBED_MODEL_NAME = "Qwen/Qwen3-Embedding-0.6B"
 
 load_dotenv()
 hf_token = os.getenv("HF_TOKEN")

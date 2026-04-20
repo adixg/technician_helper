@@ -111,9 +111,9 @@ def main():
     records = load_records(json_path)
 
     client = weaviate.connect_to_local(
-        host=args.host,
-        port=args.port,
-        grpc_port=args.grpc_port
+        host="localhost",
+        port=8080,
+        grpc_port=50051
     )
 
     try:
