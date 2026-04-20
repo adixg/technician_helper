@@ -4,7 +4,11 @@ from weaviate.classes.config import Configure, Property, DataType
 COLLECTION_NAME = "ManualChunk"
 
 def main():
-    client = weaviate.connect_to_local()
+    client = weaviate.connect_to_local(
+    host="localhost",
+    port=8080,
+    grpc_port=50051
+)
 
     try:
         if client.collections.exists(COLLECTION_NAME):
