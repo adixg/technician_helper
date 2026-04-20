@@ -1,3 +1,4 @@
 .env
 /weaviate_data
 /__pycache__
+/.devcontainer
