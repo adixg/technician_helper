@@ -20,6 +20,7 @@ manual sections, and similar past incidents — served through a Streamlit web a
 - [Data pipelines](#data-pipelines)
 - [Running the app](#running-the-app)
 - [Configuration](#configuration)
+- [Development](#development)
 - [Module reference](#module-reference)
 
 ---
@@ -64,7 +65,7 @@ flowchart LR
     OUT --> UI
 ```
 
-The retrieval pipeline (`rag_fusion.run_rag_fusion`):
+The retrieval pipeline (`technician_helper.pipeline.rag_fusion.run_rag_fusion`):
 
 1. Retrieve top-k manual chunks from the **ManualChunk** collection.
 2. Retrieve top-k historical incidents from the **IncidentLogs** collection.
@@ -83,6 +84,8 @@ The retrieval pipeline (`rag_fusion.run_rag_fusion`):
 | Embeddings   | `sentence-transformers/all-MiniLM-L6-v2`              |
 | PDF parsing  | Docling                                               |
 | LLM          | `Qwen/Qwen2.5-7B-Instruct` via Hugging Face Inference API |
+| Config       | `pydantic-settings`                                   |
+| Tooling      | `ruff`, `pytest`, `hatchling`                         |
 | Language     | Python 3.11+                                          |
 
 ---
@@ -91,31 +94,35 @@ The retrieval pipeline (`rag_fusion.run_rag_fusion`):
 
 ```
 technician_helper/
-├── app.py                      # Streamlit application (main entry point)
-├── rag_fusion.py               # Full troubleshooting RAG pipeline
-│
-├── docling_code.py             # PDF → Markdown (+ figures/tables/images)
-├── sections_json_gen.py        # Markdown → sections JSON
-├── chunks_json_gen.py          # sections JSON → embedding-ready chunks
-├── create_manual_collection.py # Create the ManualChunk schema in Weaviate
-├── upload_manual_chunks.py     # Embed + upload manual chunks
-├── query_manuals.py            # Semantic search over ManualChunk
-│
-├── create_incident_json.py     # Incident CSV → structured JSON
-├── create_log_collection.py    # Create the IncidentLogs schema in Weaviate
-├── upload_incident_json.py     # Embed + upload incident records
-├── incident_ingest.py          # Insert a single incident (used by app.py)
-├── query_incident_logs.py      # Semantic search over IncidentLogs
-│
-├── test_ollama.py              # Local Ollama connectivity check
-├── requirements.txt
-├── Dockerfile                  # Containerized Streamlit app
+├── pyproject.toml                     # Packaging, dependencies, ruff + pytest config
+├── docker-compose.yml                 # Weaviate + app, one command
+├── Dockerfile
+├── src/technician_helper/
+│   ├── config.py                      # Centralised settings (env-overridable)
+│   ├── clients.py                     # Shared Weaviate client factory
+│   ├── app.py                         # Streamlit application
+│   ├── ingestion/
+│   │   ├── pdf_to_markdown.py         # PDF → Markdown (Docling)
+│   │   ├── markdown_to_sections.py    # Markdown → sections JSON
+│   │   ├── sections_to_chunks.py      # sections JSON → chunk JSON
+│   │   ├── incident_csv_to_json.py    # incident CSV → structured JSON
+│   │   └── incident_record.py         # insert a single incident (used by app.py)
+│   ├── vectorstore/
+│   │   ├── manual_collection.py       # create the ManualChunk schema
+│   │   ├── incident_collection.py     # create the IncidentLogs schema
+│   │   ├── upload_manual_chunks.py    # embed + upload manual chunks
+│   │   └── upload_incident_json.py    # embed + upload incident records
+│   ├── retrieval/
+│   │   ├── manuals.py                 # semantic search over ManualChunk
+│   │   └── incidents.py               # semantic search over IncidentLogs
+│   └── pipeline/
+│       └── rag_fusion.py              # full troubleshooting pipeline
+├── scripts/check_ollama.py           # ad-hoc HF Inference API connectivity check
+├── tests/                            # pytest unit tests
 └── data/
-    ├── manuals/                # Source PDFs
-    ├── manuals_converted/      # Docling Markdown output
-    ├── manuals_sections/       # Sections JSON
-    ├── manuals_chunks/         # Chunks JSON
-    └── logs/                   # Incident CSV + JSON
+    ├── manuals/                      # source PDFs (tracked)
+    ├── logs/                         # incident CSV (tracked)
+    └── manuals_converted/ …          # pipeline output (git-ignored, regenerable)
 ```
 
 ---
@@ -137,31 +144,31 @@ cd technician_helper
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 
-pip install -r requirements.txt
+pip install -e ".[dev]"
 ```
 
 ### 2. Configure environment
 
-Create a `.env` file in the project root:
-
 ```bash
-HF_TOKEN=your_huggingface_token
+cp .env.example .env
 ```
+
+Then edit `.env` and set your `HF_TOKEN`. All other settings have sensible defaults
+(see [Configuration](#configuration)).
 
 ### 3. Start Weaviate
 
-**Windows (PowerShell):**
+**Docker Compose (recommended)** brings up Weaviate and the app together:
 
-```powershell
-docker run -d --name weaviate -p 8080:8080 -p 50051:50051 `
-  -v "${PWD}\weaviate_data:/var/lib/weaviate" `
-  -e QUERY_DEFAULTS_LIMIT=20 `
-  -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true `
-  -e DEFAULT_VECTORIZER_MODULE=none `
-  semitechnologies/weaviate:latest
+```bash
+HF_TOKEN=your_token docker compose up --build
 ```
 
-**Linux / macOS:**
+The app is then on <http://localhost:8501>. To run only Weaviate, use
+`docker compose up weaviate`.
+
+<details>
+<summary>Plain <code>docker run</code> (Weaviate only)</summary>
 
 ```bash
 docker run -d --name weaviate -p 8080:8080 -p 50051:50051 \
@@ -172,48 +179,36 @@ docker run -d --name weaviate -p 8080:8080 -p 50051:50051 \
   semitechnologies/weaviate:latest
 ```
 
-Weaviate is now reachable at `http://localhost:8080` (REST) and `localhost:50051` (gRPC).
+</details>
 
 ### 4. Load data
 
-Run the [data pipelines](#data-pipelines) below to populate the vector database, then
-start the app.
+Run the [data pipelines](#data-pipelines) to populate the vector database, then start
+the app.
 
 ---
 
 ## Data pipelines
 
+Installing the package exposes a set of `th-*` console commands (equivalent to
+`python -m technician_helper.<module>`).
+
 ### Manual ingestion
 
 ```bash
-# 1. Convert PDF → Markdown
-python docling_code.py "data/manuals/manual.pdf"
-
-# 2. Markdown → sections JSON
-python sections_json_gen.py "data/manuals_converted/manual-with-image-refs.md"
-
-# 3. Sections JSON → chunks JSON
-python chunks_json_gen.py "data/manuals_sections/manual-sections.json" \
-    --max_chars 2000 --min_chars 200
-
-# 4. Create the Weaviate collection (run once)
-python create_manual_collection.py
-
-# 5. Embed + upload
-python upload_manual_chunks.py "data/manuals_chunks/manual-chunks.json"
+th-pdf-to-markdown "data/manuals/manual.pdf"
+th-markdown-to-sections "data/manuals_converted/manual-with-image-refs.md"
+th-sections-to-chunks "data/manuals_sections/manual-sections.json" --max_chars 2000 --min_chars 200
+th-create-manual-collection                       # run once
+th-upload-manuals "data/manuals_chunks/manual-chunks.json"
 ```
 
 ### Incident log ingestion
 
 ```bash
-# 1. Normalize CSV → structured JSON
-python create_incident_json.py data/logs/predictive-maintenance-incident-log.csv
-
-# 2. Create the Weaviate collection (run once)
-python create_log_collection.py
-
-# 3. Embed + upload
-python upload_incident_json.py data/logs/incident_chunks.json
+th-incident-csv data/logs/predictive-maintenance-incident-log.csv
+th-create-incident-collection                     # run once
+th-upload-incidents data/logs/incident_chunks.json
 ```
 
 ---
@@ -221,198 +216,135 @@ python upload_incident_json.py data/logs/incident_chunks.json
 ## Running the app
 
 ```bash
-streamlit run app.py
+streamlit run src/technician_helper/app.py
 ```
 
-Then open [http://localhost:8501](http://localhost:8501).
+Then open <http://localhost:8501>.
 
-**With Docker:**
+**With Docker Compose:**
 
 ```bash
-docker build -t technician-helper .
-docker run -p 8501:8501 --env-file .env technician-helper
+HF_TOKEN=your_token docker compose up --build
 ```
 
 ---
 
 ## Configuration
 
-| Variable / setting | Where            | Purpose                                            |
-| ------------------ | ---------------- | ------------------------------------------------- |
-| `HF_TOKEN`         | `.env`           | Hugging Face token for embeddings + Inference API |
-| Weaviate host/port | `localhost:8080` / `50051` | Vector database connection (hard-coded)  |
-| Streamlit port     | `8501`           | Web UI                                            |
+All settings live in [`src/technician_helper/config.py`](src/technician_helper/config.py)
+and can be overridden via environment variables or `.env`:
 
-Common overridable CLI arguments across the pipeline scripts:
+| Variable                | Default                                    | Purpose                              |
+| ----------------------- | ------------------------------------------ | ----------------------------------- |
+| `HF_TOKEN`              | –                                          | Hugging Face token (required)       |
+| `WEAVIATE_HOST`         | `localhost`                                | Weaviate host                       |
+| `WEAVIATE_HTTP_PORT`    | `8080`                                     | Weaviate REST port                  |
+| `WEAVIATE_GRPC_PORT`    | `50051`                                    | Weaviate gRPC port                  |
+| `MANUAL_COLLECTION`     | `ManualChunk`                              | Manual chunk collection name        |
+| `INCIDENT_COLLECTION`   | `IncidentLogs`                             | Incident log collection name        |
+| `EMBED_MODEL`           | `sentence-transformers/all-MiniLM-L6-v2`   | Embedding model                     |
+| `LLM_MODEL`             | `Qwen/Qwen2.5-7B-Instruct`                 | Fusion LLM (HF Inference API)       |
 
-| Argument           | Applies to                              | Default                                   |
-| ------------------ | --------------------------------------- | ----------------------------------------- |
-| `--output_dir`     | `docling_code`, `sections_json_gen`, `chunks_json_gen` | script-specific            |
-| `--max_chars` / `--min_chars` | `chunks_json_gen`             | `2000` / `200`                            |
-| `--collection_name`| `upload_incident_json`, `upload_manual_chunks` | `IncidentLogs` / `ManualChunk`    |
-| `--embed_model`    | `upload_incident_json`, `upload_manual_chunks` | `all-MiniLM-L6-v2`                 |
-| `--batch_size`     | `upload_manual_chunks`                  | `2`                                       |
+---
+
+## Development
+
+```bash
+pip install -e ".[dev]"
+
+pytest            # run the unit test suite
+ruff check .      # lint
+ruff format .     # format
+```
 
 ---
 
 ## Module reference
 
 <details>
-<summary><strong>Click to expand per-file documentation</strong></summary>
+<summary><strong>Click to expand per-module documentation</strong></summary>
 
 ### `app.py`
 
-Main Streamlit application. Provides UI for ingesting PDF manuals, adding incident log
-entries, running manual/incident retrieval, and executing the full troubleshooting
-pipeline.
+Main Streamlit application. UI for ingesting PDF manuals, adding incident log entries,
+running manual/incident retrieval, and executing the full troubleshooting pipeline.
 
 ```bash
-streamlit run app.py
+streamlit run src/technician_helper/app.py
 ```
 
-### `rag_fusion.py`
+### `pipeline/rag_fusion.py`
 
 Runs the full troubleshooting pipeline: retrieve manual evidence → retrieve incident
-evidence → build prompt → call LLM → extract and validate structured JSON. Used by
-`app.py`.
+evidence → build prompt → call LLM → extract and validate structured JSON.
 
 ```python
-from rag_fusion import run_rag_fusion
+from technician_helper.pipeline.rag_fusion import run_rag_fusion
 
 result = run_rag_fusion(query="Pump vibration after restart")
 ```
 
-CLI:
+CLI: `th-rag-fusion --query "Pump vibration after restart" --debug`
 
-```bash
-python rag_fusion.py --query "Pump vibration after restart" --debug
-```
+### `ingestion/pdf_to_markdown.py`
 
-### `docling_code.py`
+Converts a PDF manual into Markdown using Docling, extracting figures, tables, and image
+references. CLI: `th-pdf-to-markdown "data/manuals/manual.pdf" [--output_dir DIR]`
 
-Converts PDF manuals into Markdown using Docling, extracting figures, tables, and image
-references.
+### `ingestion/markdown_to_sections.py`
 
-```bash
-python docling_code.py "data/manuals/manual.pdf" --output_dir data/manuals_converted
-```
+Splits a Markdown manual into structured **sections JSON** (title, text, image
+references). CLI: `th-markdown-to-sections "…-with-image-refs.md" [--output_dir DIR]`
 
-### `sections_json_gen.py`
+### `ingestion/sections_to_chunks.py`
 
-Splits a Markdown manual into structured **sections JSON**. Each section contains a title,
-text, and image references.
+Splits a sections JSON file into smaller embedding-ready **chunks JSON**.
+CLI: `th-sections-to-chunks "…-sections.json" [--max_chars N] [--min_chars N]`
 
-```bash
-python sections_json_gen.py "data/manuals_converted/manual-with-image-refs.md" \
-    --output_dir data/manuals_sections
-```
+### `ingestion/incident_csv_to_json.py`
 
-### `chunks_json_gen.py`
+Converts an incident log CSV into structured JSON records (datetime normalization,
+numeric cleaning, text-field generation). CLI: `th-incident-csv <csv> [--output_json PATH]`
 
-Splits a **sections JSON** file into smaller embedding-ready **chunks JSON**.
+### `ingestion/incident_record.py`
 
-```bash
-python chunks_json_gen.py "data/manuals_sections/manual-sections.json" \
-    --output_dir data/manuals_chunks --max_chars 2000 --min_chars 200
-```
-
-### `create_manual_collection.py`
-
-Creates the **ManualChunk** collection schema in Weaviate. Run once before uploading
-manual chunks.
-
-```bash
-python create_manual_collection.py
-```
-
-### `upload_manual_chunks.py`
-
-Embeds manual chunk JSON and uploads it into the **ManualChunk** collection.
-
-```bash
-python upload_manual_chunks.py data/manuals_chunks/manual-chunks.json \
-    --collection_name ManualChunk \
-    --embed_model Qwen/Qwen3-Embedding-0.6B \
-    --batch_size 2
-```
-
-### `query_manuals.py`
-
-Semantic search over the **ManualChunk** collection; returns relevant manual sections.
-
-```python
-from query_manuals import semantic_query
-
-results = semantic_query(question="How should the motor be grounded?", top_k=5)
-```
-
-```bash
-python query_manuals.py --query "motor grounding procedure" --top_k 3
-```
-
-### `create_incident_json.py`
-
-Converts an incident log CSV into structured JSON records suitable for embedding
-(datetime normalization, numeric cleaning, text-field generation for semantic search).
-
-```bash
-python create_incident_json.py data/logs/predictive-maintenance-incident-log.csv \
-    --output_json data/logs/incident_chunks.json
-```
-
-### `create_log_collection.py`
-
-Creates the **IncidentLogs** collection schema in Weaviate. Run once before uploading
-incident JSON.
-
-```bash
-python create_log_collection.py
-```
-
-### `upload_incident_json.py`
-
-Embeds incident JSON records and uploads them into the **IncidentLogs** collection.
-
-```bash
-python upload_incident_json.py data/logs/incident_chunks.json \
-    --collection_name IncidentLogs \
-    --embed_model sentence-transformers/all-MiniLM-L6-v2
-```
-
-### `incident_ingest.py`
-
-Utility module for inserting **single incident records** into Weaviate (record
+Utility module for inserting a **single** incident record into Weaviate (record
 construction, embedding, upload, optional CSV persistence). Used by `app.py`.
 
 ```python
-from incident_ingest import (
+from technician_helper.ingestion.incident_record import (
     build_incident_record_from_form,
     upload_single_incident_to_weaviate,
 )
 ```
 
-### `query_incident_logs.py`
+### `vectorstore/manual_collection.py` · `vectorstore/incident_collection.py`
 
-Semantic search over the **IncidentLogs** collection; returns similar historical
-incidents.
+Create the **ManualChunk** / **IncidentLogs** collection schemas in Weaviate. Run once
+before uploading. CLI: `th-create-manual-collection`, `th-create-incident-collection`
+
+### `vectorstore/upload_manual_chunks.py` · `vectorstore/upload_incident_json.py`
+
+Embed chunk / incident JSON and upload it to the corresponding collection.
+CLI: `th-upload-manuals <chunks.json>`, `th-upload-incidents <incidents.json>`
+(both accept `--collection_name` and `--embed_model`).
+
+### `retrieval/manuals.py` · `retrieval/incidents.py`
+
+Semantic search over the **ManualChunk** / **IncidentLogs** collections.
 
 ```python
-from query_incident_logs import semantic_query
+from technician_helper.retrieval.manuals import semantic_query
 
-results = semantic_query(query_text="fault code E102 vibration", top_k=5)
+results = semantic_query(question="How should the motor be grounded?", top_k=5)
 ```
 
-```bash
-python query_incident_logs.py --query "bearing vibration on pump" --top_k 3
-```
+CLI: `th-query-manuals --query "motor grounding" --top_k 3`,
+`th-query-incidents --query "bearing vibration on pump" --top_k 3`
 
-### `test_ollama.py`
+### `scripts/check_ollama.py`
 
-Test script for verifying local Ollama model availability (installation, inference
-connectivity, prompt response behavior).
-
-```bash
-python test_ollama.py
-```
+Ad-hoc connectivity check against the Hugging Face Inference API. Not part of the test
+suite. Run with `python scripts/check_ollama.py`.
 
 </details>
