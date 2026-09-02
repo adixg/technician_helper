@@ -1,0 +1,29 @@
+.git/
+.gitignore
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.devcontainer/
+tests/
+scripts/
+
+# Local / regenerable data
+weaviate_data/
+data/manuals_converted/
+data/manuals_sections/
+data/manuals_chunks/
+data/logs/incident_chunks.json
+results/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Docs (keep README for the build metadata)
+*.md
+!README.md

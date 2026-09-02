@@ -1,4 +1,47 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Packaging / build
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment / secrets
 .env
-/weaviate_data
-/__pycache__
-/.devcontainer
+.env.*
+!.env.example
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local Weaviate volume
+/weaviate_data/
+
+# Generated pipeline artifacts (regenerated from data/manuals/*.pdf and data/logs/*.csv)
+/data/manuals_converted/
+/data/manuals_sections/
+/data/manuals_chunks/
+/data/logs/incident_chunks.json
+
+# Scratch pipeline output
+/results/
