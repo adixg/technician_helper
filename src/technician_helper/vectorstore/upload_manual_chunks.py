@@ -1,35 +1,31 @@
-import json
-import argparse
-from pathlib import Path
-import os
+"""Embed manual chunk JSON and upload it to the Weaviate manual collection."""
 
-from dotenv import load_dotenv
+import argparse
+import json
+from pathlib import Path
+
 import torch
 from sentence_transformers import SentenceTransformer
-import weaviate
 
-
-DEFAULT_COLLECTION_NAME = "ManualChunk"
-# DEFAULT_EMBED_MODEL_NAME = "Qwen/Qwen3-Embedding-0.6B"
-DEFAULT_EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-
-
-load_dotenv()
-hf_token = os.getenv("HF_TOKEN")
+from technician_helper.clients import weaviate_client
+from technician_helper.config import settings
 
 
 def load_chunks(path: Path) -> dict:
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
 def upload_manual_chunks(
     chunks_json_path: Path,
-    collection_name: str = DEFAULT_COLLECTION_NAME,
-    embed_model: str = DEFAULT_EMBED_MODEL_NAME,
+    collection_name: str | None = None,
+    embed_model: str | None = None,
     batch_size: int = 2,
     progress_callback=None,
 ):
+    collection_name = collection_name or settings.manual_collection
+    embed_model = embed_model or settings.embed_model
+
     def update(message: str, pct: int):
         if progress_callback is not None:
             progress_callback("upload", message, pct)
@@ -50,7 +46,7 @@ def upload_manual_chunks(
         embed_model,
         trust_remote_code=True,
         device=device,
-        token=hf_token
+        token=settings.hf_token,
     )
 
     texts = [c["chunk_text"] for c in chunks]
@@ -60,7 +56,7 @@ def upload_manual_chunks(
 
     vectors = []
     for i in range(0, total, batch_size):
-        batch_texts = texts[i:i + batch_size]
+        batch_texts = texts[i : i + batch_size]
 
         batch_vecs = model.encode(
             batch_texts,
@@ -78,11 +74,7 @@ def upload_manual_chunks(
 
     update("Connecting to Weaviate...", 91)
 
-    client = weaviate.connect_to_local(
-        host="localhost",
-        port=8080,
-        grpc_port=50051
-    )
+    client = weaviate_client()
 
     try:
         collection = client.collections.get(collection_name)
@@ -90,7 +82,7 @@ def upload_manual_chunks(
         update("Uploading chunks to Weaviate...", 92)
 
         with collection.batch.dynamic() as batch:
-            for idx, (chunk, vec) in enumerate(zip(chunks, vectors), start=1):
+            for idx, (chunk, vec) in enumerate(zip(chunks, vectors, strict=False), start=1):
                 batch.add_object(
                     properties={
                         "chunk_id": chunk["chunk_id"],
@@ -125,32 +117,20 @@ def main():
         description="Embed chunk JSON and upload to Weaviate collection."
     )
 
-    parser.add_argument(
-        "chunks_json_path",
-        type=str,
-        help="Path to chunks JSON file"
-    )
+    parser.add_argument("chunks_json_path", type=str, help="Path to chunks JSON file")
 
     parser.add_argument(
         "--collection_name",
         type=str,
-        default=DEFAULT_COLLECTION_NAME,
-        help="Weaviate collection name"
+        default=settings.manual_collection,
+        help="Weaviate collection name",
     )
 
     parser.add_argument(
-        "--embed_model",
-        type=str,
-        default=DEFAULT_EMBED_MODEL_NAME,
-        help="Embedding model name"
+        "--embed_model", type=str, default=settings.embed_model, help="Embedding model name"
     )
 
-    parser.add_argument(
-        "--batch_size",
-        type=int,
-        default=2,
-        help="Embedding batch size"
-    )
+    parser.add_argument("--batch_size", type=int, default=2, help="Embedding batch size")
 
     args = parser.parse_args()
 

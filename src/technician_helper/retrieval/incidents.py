@@ -1,23 +1,19 @@
-# Usage:
-# python query_incident_logs.py --query "bearing vibration on pump" --top_k 3
+"""Semantic search over the incident log collection.
+
+python -m technician_helper.retrieval.incidents --query "bearing vibration on pump" --top_k 3
+"""
 
 import argparse
 import json
-import os
-from typing import Callable, Dict, List, Optional
+from collections.abc import Callable
 
-import weaviate
-from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 
-COLLECTION_NAME = "IncidentLogs"
-EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-
-load_dotenv()
-hf_token = os.getenv("HF_TOKEN")
+from technician_helper.clients import weaviate_client
+from technician_helper.config import settings
 
 
-def _update_stage(stage_callback: Optional[Callable[[str], None]], message: str) -> None:
+def _update_stage(stage_callback: Callable[[str], None] | None, message: str) -> None:
     if stage_callback:
         stage_callback(message)
 
@@ -25,28 +21,24 @@ def _update_stage(stage_callback: Optional[Callable[[str], None]], message: str)
 def semantic_query(
     query_text: str,
     top_k: int = 5,
-    stage_callback: Optional[Callable[[str], None]] = None,
-) -> List[Dict]:
+    stage_callback: Callable[[str], None] | None = None,
+) -> list[dict]:
     """
     Semantic search over IncidentLogs collection.
     Returns top-k incident records as a list of property dicts.
     """
     _update_stage(stage_callback, "Connecting to incident database")
 
-    client = weaviate.connect_to_local(
-        host="localhost",
-        port=8080,
-        grpc_port=50051,
-    )
+    client = weaviate_client()
 
     try:
         _update_stage(stage_callback, "Loading incident embedding model")
 
-        collection = client.collections.get(COLLECTION_NAME)
+        collection = client.collections.get(settings.incident_collection)
 
         model = SentenceTransformer(
-            EMBED_MODEL_NAME,
-            token=hf_token,
+            settings.embed_model,
+            token=settings.hf_token,
         )
 
         _update_stage(stage_callback, "Encoding incident query")
@@ -74,7 +66,7 @@ def semantic_query(
         client.close()
 
 
-def print_results(results: List[Dict]) -> None:
+def print_results(results: list[dict]) -> None:
     print("\nTop incident matches:\n")
 
     if not results:

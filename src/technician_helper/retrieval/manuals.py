@@ -1,26 +1,20 @@
-# Usage
-# python query_manuals.py --query "motor grounding procedure" --top_k 3
+"""Semantic search over the manual chunk collection.
 
+python -m technician_helper.retrieval.manuals --query "motor grounding procedure" --top_k 3
+"""
 
 import argparse
 import json
-import os
-from typing import Callable, Dict, List, Optional
+from collections.abc import Callable
 
 import torch
-import weaviate
-from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 
-COLLECTION_NAME = "ManualChunk"
-EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-# EMBED_MODEL_NAME = "Qwen/Qwen3-Embedding-0.6B"
-
-load_dotenv()
-hf_token = os.getenv("HF_TOKEN")
+from technician_helper.clients import weaviate_client
+from technician_helper.config import settings
 
 
-def _update_stage(stage_callback: Optional[Callable[[str], None]], message: str) -> None:
+def _update_stage(stage_callback: Callable[[str], None] | None, message: str) -> None:
     if stage_callback:
         stage_callback(message)
 
@@ -28,8 +22,8 @@ def _update_stage(stage_callback: Optional[Callable[[str], None]], message: str)
 def semantic_query(
     question: str,
     top_k: int = 5,
-    stage_callback: Optional[Callable[[str], None]] = None,
-) -> List[Dict]:
+    stage_callback: Callable[[str], None] | None = None,
+) -> list[dict]:
     """
     Semantic search over ManualChunk collection.
     Returns top-k manual chunk records as a list of property dicts.
@@ -39,10 +33,10 @@ def semantic_query(
     _update_stage(stage_callback, f"Loading manual embedding model on {device}")
 
     model = SentenceTransformer(
-        EMBED_MODEL_NAME,
+        settings.embed_model,
         trust_remote_code=True,
         device=device,
-        token=hf_token,
+        token=settings.hf_token,
     )
 
     _update_stage(stage_callback, "Encoding manual query")
@@ -55,14 +49,10 @@ def semantic_query(
 
     _update_stage(stage_callback, "Connecting to manual database")
 
-    client = weaviate.connect_to_local(
-        host="localhost",
-        port=8080,
-        grpc_port=50051,
-    )
+    client = weaviate_client()
 
     try:
-        collection = client.collections.get(COLLECTION_NAME)
+        collection = client.collections.get(settings.manual_collection)
 
         _update_stage(stage_callback, "Searching manual vectors")
 
@@ -93,7 +83,7 @@ def semantic_query(
         client.close()
 
 
-def print_results(results: List[Dict]) -> None:
+def print_results(results: list[dict]) -> None:
     print("\nTop manual matches:\n")
 
     if not results:

@@ -1,22 +1,22 @@
-import weaviate
-from weaviate.classes.config import Configure, Property, DataType
+"""Create the manual chunk collection schema in Weaviate."""
 
-COLLECTION_NAME = "ManualChunk"
+from weaviate.classes.config import Configure, DataType, Property
+
+from technician_helper.clients import weaviate_client
+from technician_helper.config import settings
+
 
 def main():
-    client = weaviate.connect_to_local(
-    host="localhost",
-    port=8080,
-    grpc_port=50051
-)
+    client = weaviate_client()
+    collection_name = settings.manual_collection
 
     try:
-        if client.collections.exists(COLLECTION_NAME):
-            print(f"Collection '{COLLECTION_NAME}' already exists")
+        if client.collections.exists(collection_name):
+            print(f"Collection '{collection_name}' already exists")
             return
 
         client.collections.create(
-            name=COLLECTION_NAME,
+            name=collection_name,
             vector_config=Configure.Vectors.self_provided(),
             properties=[
                 Property(name="chunk_id", data_type=DataType.TEXT),
@@ -33,10 +33,11 @@ def main():
             ],
         )
 
-        print(f"Created collection '{COLLECTION_NAME}'")
+        print(f"Created collection '{collection_name}'")
 
     finally:
         client.close()
+
 
 if __name__ == "__main__":
     main()

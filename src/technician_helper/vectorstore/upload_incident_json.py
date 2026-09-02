@@ -1,27 +1,22 @@
-# Usage:
-# python upload_incident_json.py data/logs/incident_chunks.json
+"""Embed incident JSON records and upload them to the Weaviate incident collection.
 
-import json
+python -m technician_helper.vectorstore.upload_incident_json data/logs/incident_chunks.json
+"""
+
 import argparse
+import json
 from pathlib import Path
-import os
 
-import weaviate
 from sentence_transformers import SentenceTransformer
-from dotenv import load_dotenv
 
+from technician_helper.clients import weaviate_client
+from technician_helper.config import settings
 
-DEFAULT_COLLECTION_NAME = "IncidentLogs"
 DEFAULT_JSON_PATH = "data/logs/incident_chunks.json"
-DEFAULT_EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-
-
-load_dotenv()
-hf_token = os.getenv("HF_TOKEN")
 
 
 def load_records(json_path: Path) -> list[dict]:
-    with open(json_path, "r", encoding="utf-8") as f:
+    with open(json_path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -29,22 +24,16 @@ def embed_and_upload(client, collection_name: str, records: list[dict], model_na
     collection = client.collections.get(collection_name)
 
     print(f"Loading embedding model: {model_name}")
-    model = SentenceTransformer(model_name, token=hf_token if hf_token else None)
+    model = SentenceTransformer(model_name, token=settings.hf_token)
 
     texts = [r["text"] for r in records]
     vectors = model.encode(
-        texts,
-        normalize_embeddings=True,
-        convert_to_numpy=True,
-        show_progress_bar=True
+        texts, normalize_embeddings=True, convert_to_numpy=True, show_progress_bar=True
     ).tolist()
 
     with collection.batch.dynamic() as batch:
-        for record, vector in zip(records, vectors):
-            batch.add_object(
-                properties=record,
-                vector={"incident_vector": vector}
-            )
+        for record, vector in zip(records, vectors, strict=False):
+            batch.add_object(properties=record, vector={"incident_vector": vector})
 
     failed = collection.batch.failed_objects
     if failed:
@@ -61,45 +50,21 @@ def main():
     )
 
     parser.add_argument(
-        "json_path",
-        nargs="?",
-        default=DEFAULT_JSON_PATH,
-        help="Path to incident JSON file"
+        "json_path", nargs="?", default=DEFAULT_JSON_PATH, help="Path to incident JSON file"
     )
 
     parser.add_argument(
         "--collection_name",
         type=str,
-        default=DEFAULT_COLLECTION_NAME,
-        help="Weaviate collection name"
+        default=settings.incident_collection,
+        help="Weaviate collection name",
     )
 
     parser.add_argument(
         "--embed_model",
         type=str,
-        default=DEFAULT_EMBED_MODEL_NAME,
-        help="SentenceTransformer embedding model name"
-    )
-
-    parser.add_argument(
-        "--host",
-        type=str,
-        default="localhost",
-        help="Weaviate host"
-    )
-
-    parser.add_argument(
-        "--port",
-        type=int,
-        default=8080,
-        help="Weaviate HTTP port"
-    )
-
-    parser.add_argument(
-        "--grpc_port",
-        type=int,
-        default=50051,
-        help="Weaviate gRPC port"
+        default=settings.embed_model,
+        help="SentenceTransformer embedding model name",
     )
 
     args = parser.parse_args()
@@ -110,18 +75,14 @@ def main():
 
     records = load_records(json_path)
 
-    client = weaviate.connect_to_local(
-        host="localhost",
-        port=8080,
-        grpc_port=50051
-    )
+    client = weaviate_client()
 
     try:
         embed_and_upload(
             client=client,
             collection_name=args.collection_name,
             records=records,
-            model_name=args.embed_model
+            model_name=args.embed_model,
         )
     finally:
         client.close()

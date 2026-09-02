@@ -1,11 +1,13 @@
-# Usage:
-# python .\chunks_json_gen.py ".\data\manuals_sections\Standard Induction Motors operation Manual-sections.json"
+"""Split sections JSON into smaller embedding-ready chunks.
 
+    python -m technician_helper.ingestion.sections_to_chunks \\
+        "data/manuals_sections/manual-sections.json" --max_chars 2000 --min_chars 200
+"""
+
+import argparse
 import json
 import re
-import argparse
 from pathlib import Path
-
 
 DEFAULT_MAX_CHARS = 1000000
 DEFAULT_MIN_CHARS = 1
@@ -103,7 +105,7 @@ def build_chunks(section_doc: dict, max_chars: int, min_chars: int):
         "manufacturer": section_doc.get("manufacturer"),
         "manual_type": section_doc.get("manual_type"),
         "num_sections": section_doc.get("num_sections"),
-        "chunks": []
+        "chunks": [],
     }
 
     chunk_counter = 0
@@ -118,9 +120,7 @@ def build_chunks(section_doc: dict, max_chars: int, min_chars: int):
             continue
 
         text_chunks = chunk_section_text(
-            text=section_text,
-            max_chars=max_chars,
-            min_chars=min_chars
+            text=section_text, max_chars=max_chars, min_chars=min_chars
         )
 
         if not text_chunks and section_images:
@@ -128,14 +128,16 @@ def build_chunks(section_doc: dict, max_chars: int, min_chars: int):
 
         for idx, chunk_text in enumerate(text_chunks, start=1):
             chunk_counter += 1
-            out["chunks"].append({
-                "chunk_id": f"chunk_{chunk_counter:04d}",
-                "section_id": section_id,
-                "section_title": section_title,
-                "chunk_index_within_section": idx,
-                "chunk_text": chunk_text,
-                "images": section_images.copy()
-            })
+            out["chunks"].append(
+                {
+                    "chunk_id": f"chunk_{chunk_counter:04d}",
+                    "section_id": section_id,
+                    "section_title": section_title,
+                    "chunk_index_within_section": idx,
+                    "chunk_text": chunk_text,
+                    "images": section_images.copy(),
+                }
+            )
 
     out["num_chunks"] = len(out["chunks"])
     return out
@@ -154,16 +156,12 @@ def generate_chunks_json(
 
     update("Reading sections JSON...", 55)
 
-    with open(sections_json_path, "r", encoding="utf-8") as f:
+    with open(sections_json_path, encoding="utf-8") as f:
         section_doc = json.load(f)
 
     update("Building chunks from sections...", 60)
 
-    chunk_doc = build_chunks(
-        section_doc=section_doc,
-        max_chars=max_chars,
-        min_chars=min_chars
-    )
+    chunk_doc = build_chunks(section_doc=section_doc, max_chars=max_chars, min_chars=min_chars)
 
     update("Creating output directory...", 65)
 
@@ -185,35 +183,26 @@ def generate_chunks_json(
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Convert sectioned manual JSON into chunked JSON."
-    )
+    parser = argparse.ArgumentParser(description="Convert sectioned manual JSON into chunked JSON.")
 
-    parser.add_argument(
-        "sections_json_path",
-        type=str,
-        help="Path to the input sections JSON file"
-    )
+    parser.add_argument("sections_json_path", type=str, help="Path to the input sections JSON file")
 
     parser.add_argument(
         "--output_dir",
         type=str,
         default="./data/manuals_chunks",
-        help="Directory to save the output chunks JSON"
+        help="Directory to save the output chunks JSON",
     )
 
     parser.add_argument(
-        "--max_chars",
-        type=int,
-        default=DEFAULT_MAX_CHARS,
-        help="Maximum characters per chunk"
+        "--max_chars", type=int, default=DEFAULT_MAX_CHARS, help="Maximum characters per chunk"
     )
 
     parser.add_argument(
         "--min_chars",
         type=int,
         default=DEFAULT_MIN_CHARS,
-        help="Minimum characters for small-chunk merging"
+        help="Minimum characters for small-chunk merging",
     )
 
     args = parser.parse_args()

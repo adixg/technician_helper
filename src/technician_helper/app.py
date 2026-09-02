@@ -1,27 +1,23 @@
-import json
 import shutil
 import tempfile
 import traceback
 from pathlib import Path
-from typing import List
 
 import streamlit as st
 
-from query_manuals import semantic_query as query_manuals
-from query_incident_logs import semantic_query as query_incient_logs
-from rag_fusion import run_rag_fusion
-
-from docling_code import convert_pdf
-from sections_json_gen import generate_sections_json
-from chunks_json_gen import generate_chunks_json
-from upload_manual_chunks import upload_manual_chunks
-
-from incident_ingest import (
+from technician_helper.config import settings
+from technician_helper.ingestion.incident_record import (
+    append_incident_to_csv,
     build_incident_record_from_form,
     upload_single_incident_to_weaviate,
-    append_incident_to_csv,
 )
-
+from technician_helper.ingestion.markdown_to_sections import generate_sections_json
+from technician_helper.ingestion.pdf_to_markdown import convert_pdf
+from technician_helper.ingestion.sections_to_chunks import generate_chunks_json
+from technician_helper.pipeline.rag_fusion import run_rag_fusion
+from technician_helper.retrieval.incidents import semantic_query as query_incident_logs
+from technician_helper.retrieval.manuals import semantic_query as query_manuals
+from technician_helper.vectorstore.upload_manual_chunks import upload_manual_chunks
 
 st.set_page_config(
     page_title="Technician Helper",
@@ -41,13 +37,13 @@ st.markdown(
 )
 
 st.title("Technician Helper")
-st.caption(
-    "Ingest manuals, add incidents, run retrieval, and do troubleshooting."
-)
+st.caption("Ingest manuals, add incidents, run retrieval, and do troubleshooting.")
 
 DEFAULT_EXAMPLES = [
-    "Machine M01 has fault code E102 with vibration and abnormal bearing noise. What should I inspect first?",
-    "Pump M01 has recurring vibration after restart with fault code E102. What are the likely causes?",
+    "Machine M01 has fault code E102 with vibration and abnormal bearing noise. "
+    "What should I inspect first?",
+    "Pump M01 has recurring vibration after restart with fault code E102. "
+    "What are the likely causes?",
     "How should the motor be grounded?",
 ]
 
@@ -105,17 +101,19 @@ def set_stage(stage: str, message: str, placeholder) -> None:
 def retrieval_stage_callback(prefix: str, placeholder):
     def _callback(message: str):
         set_stage(prefix, message, placeholder)
+
     return _callback
 
 
 def fusion_stage_callback(placeholder):
     def _callback(stage: str, message: str):
         set_stage(stage, message, placeholder)
+
     return _callback
 
 
-def save_uploaded_files(uploaded_files, target_dir: Path) -> List[str]:
-    saved_paths: List[str] = []
+def save_uploaded_files(uploaded_files, target_dir: Path) -> list[str]:
+    saved_paths: list[str] = []
     target_dir.mkdir(parents=True, exist_ok=True)
 
     if not uploaded_files:
@@ -143,7 +141,7 @@ def run_manual_retrieval(query: str, placeholder):
 
 def run_log_retrieval(query: str, placeholder):
     set_stage("Log Retrieval", "Starting log retrieval...", placeholder)
-    results = query_incient_logs(
+    results = query_incident_logs(
         query_text=query,
         top_k=5,
         stage_callback=retrieval_stage_callback("Log Retrieval", placeholder),
@@ -154,8 +152,6 @@ def run_log_retrieval(query: str, placeholder):
 
 def run_full_pipeline(query: str, placeholder):
     tmp_root = Path(tempfile.mkdtemp(prefix="technician_helper_"))
-    manuals_dir = tmp_root / "manuals"
-    logs_dir = tmp_root / "logs"
 
     try:
         set_stage("Preparation", "Saving uploaded files...", placeholder)
@@ -221,13 +217,13 @@ def ingest_manual_pdf(
 
         md_path = convert_pdf(
             source=pdf_path,
-            output_dir=Path("data/manuals_converted"),
+            output_dir=settings.manuals_converted_dir,
             progress_callback=progress_callback,
         )
 
         sections_json_path = generate_sections_json(
             md_path=md_path,
-            output_dir=Path("data/manuals_sections"),
+            output_dir=settings.manuals_sections_dir,
             machine=machine,
             manufacturer=manufacturer,
             manual_type=manual_type,
@@ -236,7 +232,7 @@ def ingest_manual_pdf(
 
         chunks_json_path = generate_chunks_json(
             sections_json_path=sections_json_path,
-            output_dir=Path("data/manuals_chunks"),
+            output_dir=settings.manuals_chunks_dir,
             max_chars=max_chars,
             min_chars=min_chars,
             progress_callback=progress_callback,
@@ -258,9 +254,7 @@ def ingest_manual_pdf(
         }
 
     except Exception as exc:
-        st.session_state.ingest_error = (
-            f"{type(exc).__name__}: {exc}\n\n{traceback.format_exc()}"
-        )
+        st.session_state.ingest_error = f"{type(exc).__name__}: {exc}\n\n{traceback.format_exc()}"
         return None
 
     finally:
@@ -285,21 +279,13 @@ st.text_area(
 
 row1_col1, row1_col2 = st.columns(2)
 with row1_col1:
-    run_manual_button = st.button(
-        "Run manual retrieval",
-        use_container_width=True
-    )
+    run_manual_button = st.button("Run manual retrieval", use_container_width=True)
 
 with row1_col2:
-    run_log_button = st.button(
-        "Run log retrieval",
-        use_container_width=True
-    )
+    run_log_button = st.button("Run log retrieval", use_container_width=True)
 
 run_pipeline_button = st.button(
-    "Run full pipeline (manual + log retrieval)",
-    type="primary",
-    use_container_width=True
+    "Run full pipeline (manual + log retrieval)", type="primary", use_container_width=True
 )
 
 st.divider()
@@ -307,10 +293,7 @@ st.divider()
 st.subheader("Pipeline status")
 stage_placeholder = st.empty()
 with stage_placeholder.container():
-    st.info(
-        f"**Stage:** {st.session_state.pipeline_stage}\n\n"
-        f"{st.session_state.pipeline_message}"
-    )
+    st.info(f"**Stage:** {st.session_state.pipeline_stage}\n\n{st.session_state.pipeline_message}")
 
 query = st.session_state.query_text.strip()
 
@@ -322,14 +305,10 @@ if run_manual_button:
         set_stage("Validation", "Please enter a query first.", stage_placeholder)
     else:
         try:
-            st.session_state.manual_results = run_manual_retrieval(
-                query, stage_placeholder
-            )
+            st.session_state.manual_results = run_manual_retrieval(query, stage_placeholder)
         except Exception as exc:
             st.session_state.manual_results = None
-            st.session_state.last_error = (
-                f"{type(exc).__name__}: {exc}\n\n{traceback.format_exc()}"
-            )
+            st.session_state.last_error = f"{type(exc).__name__}: {exc}\n\n{traceback.format_exc()}"
             set_stage(
                 "Manual Retrieval Error",
                 "Manual retrieval failed.",
@@ -344,14 +323,10 @@ if run_log_button:
         set_stage("Validation", "Please enter a query first.", stage_placeholder)
     else:
         try:
-            st.session_state.log_results = run_log_retrieval(
-                query, stage_placeholder
-            )
+            st.session_state.log_results = run_log_retrieval(query, stage_placeholder)
         except Exception as exc:
             st.session_state.log_results = None
-            st.session_state.last_error = (
-                f"{type(exc).__name__}: {exc}\n\n{traceback.format_exc()}"
-            )
+            st.session_state.last_error = f"{type(exc).__name__}: {exc}\n\n{traceback.format_exc()}"
             set_stage(
                 "Log Retrieval Error",
                 "Log retrieval failed.",
@@ -378,15 +353,12 @@ st.divider()
 
 manual_col, log_col = st.columns(2)
 
-from pathlib import Path
-
 with manual_col:
     st.subheader("Manual retrieval output")
 
-    base_image_dir = Path("data/manuals_converted")
+    base_image_dir = settings.manuals_converted_dir
 
     if st.session_state.manual_results is not None:
-
         for i, result in enumerate(st.session_state.manual_results, start=1):
             section_title = result.get("section_title", "Section")
             score = result.get("score")
@@ -396,7 +368,6 @@ with manual_col:
                 expander_title += f"  |  similarity: {score:.4f}"
 
             with st.expander(expander_title, expanded=False):
-
                 if result.get("chunk_text"):
                     st.write(result["chunk_text"])
 
@@ -420,7 +391,6 @@ with log_col:
     st.subheader("Log retrieval output")
 
     if st.session_state.log_results is not None:
-
         for i, result in enumerate(st.session_state.log_results, start=1):
             incident_id = result.get("incident_id", "Unknown incident")
             machine_id = result.get("machine_id", "Unknown machine")
@@ -436,7 +406,6 @@ with log_col:
                 expander_title += f" | distance: {distance:.4f}"
 
             with st.expander(expander_title, expanded=False):
-
                 if result.get("text"):
                     st.write("**Retrieved text**")
                     st.write(result["text"])
@@ -495,8 +464,8 @@ if st.session_state.result_json is not None:
         if likely_causes:
             for i, item in enumerate(likely_causes, start=1):
                 st.markdown(f"**Cause {i}**")
-                st.write(f'cause: {item.get("cause", "")}')
-                st.write(f'why: {item.get("why", "")}')
+                st.write(f"cause: {item.get('cause', '')}")
+                st.write(f"why: {item.get('why', '')}")
                 st.divider()
         else:
             st.write("[]")
@@ -512,9 +481,9 @@ if st.session_state.result_json is not None:
         if manual_references:
             for i, item in enumerate(manual_references, start=1):
                 st.markdown(f"**Reference {i}**")
-                st.write(f'section_title: {item.get("section_title", "")}')
-                st.write(f'source_pdf: {item.get("source_pdf", "")}')
-                st.write(f'reason: {item.get("reason", "")}')
+                st.write(f"section_title: {item.get('section_title', '')}")
+                st.write(f"source_pdf: {item.get('source_pdf', '')}")
+                st.write(f"reason: {item.get('reason', '')}")
                 st.divider()
         else:
             st.write("[]")
@@ -523,9 +492,9 @@ if st.session_state.result_json is not None:
         if similar_incidents:
             for i, item in enumerate(similar_incidents, start=1):
                 st.markdown(f"**Incident {i}**")
-                st.write(f'machine_id: {item.get("machine_id", "")}')
-                st.write(f'fault_code: {item.get("fault_code", "")}')
-                st.write(f'summary: {item.get("summary", "")}')
+                st.write(f"machine_id: {item.get('machine_id', '')}")
+                st.write(f"fault_code: {item.get('fault_code', '')}")
+                st.write(f"summary: {item.get('summary', '')}")
                 st.divider()
         else:
             st.write("[]")
@@ -570,19 +539,13 @@ with st.expander("Ingest a manual PDF into Weaviate", expanded=False):
     with ingest_col1:
         collection_name = st.text_input("Collection name", value="ManualChunk")
     with ingest_col2:
-        max_chars = st.number_input(
-            "Max chars per chunk", min_value=100, value=2000, step=100
-        )
+        max_chars = st.number_input("Max chars per chunk", min_value=100, value=2000, step=100)
     with ingest_col3:
-        min_chars = st.number_input(
-            "Min chars merge threshold", min_value=1, value=200, step=50
-        )
+        min_chars = st.number_input("Min chars merge threshold", min_value=1, value=200, step=50)
 
     ingest_col4, ingest_col5, ingest_col6 = st.columns(3)
     with ingest_col4:
-        batch_size = st.number_input(
-            "Embedding batch size", min_value=1, value=2, step=1
-        )
+        batch_size = st.number_input("Embedding batch size", min_value=1, value=2, step=1)
     with ingest_col5:
         machine = st.text_input("Machine metadata (optional)", value="")
     with ingest_col6:
@@ -634,7 +597,7 @@ with st.expander("Ingest a manual PDF into Weaviate", expanded=False):
 
         with st.expander("View generated markdown", expanded=False):
             try:
-                with open(md_file_path, "r", encoding="utf-8") as f:
+                with open(md_file_path, encoding="utf-8") as f:
                     md_text = f.read()
 
                 st.text_area(
@@ -711,9 +674,7 @@ with st.expander("Add a new incident log entry", expanded=False):
             value="IncidentLogs",
         )
 
-        submit_incident = st.form_submit_button(
-            "Add incident and upload to Weaviate"
-        )
+        submit_incident = st.form_submit_button("Add incident and upload to Weaviate")
 
     if submit_incident:
         st.session_state.incident_add_error = None

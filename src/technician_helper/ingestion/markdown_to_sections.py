@@ -1,9 +1,12 @@
-# Usage:
-# python .\sections_json_gen.py ".\data\manuals_converted\Standard Induction Motors operation Manual-with-image-refs.md"
+"""Split a Markdown manual (with image refs) into structured sections JSON.
 
+    python -m technician_helper.ingestion.markdown_to_sections \\
+        "data/manuals_converted/manual-with-image-refs.md"
+"""
+
+import argparse
 import json
 import re
-import argparse
 from pathlib import Path
 
 
@@ -17,8 +20,8 @@ def parse_md_sections(md_text: str):
 
     lines = md_text.splitlines()
 
-    image_pattern = re.compile(r'!\[\]\((.*?)\)')
-    heading_pattern = re.compile(r'^\s*##\s+(.*\S)\s*$')
+    image_pattern = re.compile(r"!\[\]\((.*?)\)")
+    heading_pattern = re.compile(r"^\s*##\s+(.*\S)\s*$")
 
     sections = []
 
@@ -36,12 +39,14 @@ def parse_md_sections(md_text: str):
             return
 
         section_index += 1
-        sections.append({
-            "section_id": f"section_{section_index:03d}",
-            "section_title": current_title,
-            "text": text,
-            "images": current_images.copy()
-        })
+        sections.append(
+            {
+                "section_id": f"section_{section_index:03d}",
+                "section_title": current_title,
+                "text": text,
+                "images": current_images.copy(),
+            }
+        )
 
     for line in lines:
         heading_match = heading_pattern.match(line)
@@ -64,11 +69,7 @@ def parse_md_sections(md_text: str):
 
 
 def infer_metadata_from_content(md_text: str, md_path: Path):
-    return {
-        "machine": None,
-        "manufacturer": None,
-        "manual_type": None
-    }
+    return {"machine": None, "manufacturer": None, "manual_type": None}
 
 
 def build_output(
@@ -89,7 +90,7 @@ def build_output(
         "manufacturer": manufacturer if manufacturer is not None else inferred["manufacturer"],
         "manual_type": manual_type if manual_type is not None else inferred["manual_type"],
         "num_sections": len(sections),
-        "sections": sections
+        "sections": sections,
     }
 
     return output
@@ -139,38 +140,23 @@ def main():
         description="Convert a markdown manual with image refs into sectioned JSON."
     )
 
-    parser.add_argument(
-        "md_path",
-        type=str,
-        help="Path to the markdown file"
-    )
+    parser.add_argument("md_path", type=str, help="Path to the markdown file")
 
     parser.add_argument(
         "--output_dir",
         type=str,
         default="./data/manuals_sections",
-        help="Directory to save the JSON output"
+        help="Directory to save the JSON output",
+    )
+
+    parser.add_argument("--machine", type=str, default=None, help="Optional machine name metadata")
+
+    parser.add_argument(
+        "--manufacturer", type=str, default=None, help="Optional manufacturer metadata"
     )
 
     parser.add_argument(
-        "--machine",
-        type=str,
-        default=None,
-        help="Optional machine name metadata"
-    )
-
-    parser.add_argument(
-        "--manufacturer",
-        type=str,
-        default=None,
-        help="Optional manufacturer metadata"
-    )
-
-    parser.add_argument(
-        "--manual_type",
-        type=str,
-        default=None,
-        help="Optional manual type metadata"
+        "--manual_type", type=str, default=None, help="Optional manual type metadata"
     )
 
     args = parser.parse_args()

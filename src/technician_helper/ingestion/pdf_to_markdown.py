@@ -1,14 +1,15 @@
-# Usage
-# python docling_code.py "data/manuals/Century NEMA 42-140 Frame Motor Instruction Leaflet.pdf"
-# python docling_code.py input.pdf --output_dir converted_docs
+"""Convert a PDF manual into Markdown with extracted figures and tables (via Docling).
+
+python -m technician_helper.ingestion.pdf_to_markdown "data/manuals/manual.pdf"
+"""
 
 import argparse
 from pathlib import Path
 
-from docling_core.types.doc import ImageRefMode, PictureItem, TableItem
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling_core.types.doc import ImageRefMode, PictureItem, TableItem
 
 
 def convert_pdf(source: Path, output_dir: Path, progress_callback=None):
@@ -33,11 +34,7 @@ def convert_pdf(source: Path, output_dir: Path, progress_callback=None):
     pipeline_options.images_scale = 2.0
 
     converter = DocumentConverter(
-        format_options={
-            InputFormat.PDF: PdfFormatOption(
-                pipeline_options=pipeline_options
-            )
-        }
+        format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)}
     )
 
     update("Converting PDF to Docling document...", 18)
@@ -55,8 +52,7 @@ def convert_pdf(source: Path, output_dir: Path, progress_callback=None):
     saved_image_paths = []
 
     for idx, (element, _level) in enumerate(items, start=1):
-
-        pct = 24 + int((idx / total_items) * 36)   # maps roughly 24 -> 60
+        pct = 24 + int((idx / total_items) * 36)  # maps roughly 24 -> 60
 
         if isinstance(element, PictureItem):
             picture_idx += 1
@@ -66,14 +62,9 @@ def convert_pdf(source: Path, output_dir: Path, progress_callback=None):
             img = element.get_image(doc)
             if img is not None:
                 img.save(out_path, "PNG")
-                saved_image_paths.append(
-                    f"{doc_stem}_images/{filename}"
-                )
+                saved_image_paths.append(f"{doc_stem}_images/{filename}")
 
-            update(
-                f"Saved picture {picture_idx}...",
-                pct
-            )
+            update(f"Saved picture {picture_idx}...", pct)
 
         elif isinstance(element, TableItem):
             table_idx += 1
@@ -83,31 +74,20 @@ def convert_pdf(source: Path, output_dir: Path, progress_callback=None):
             img = element.get_image(doc)
             if img is not None:
                 img.save(out_path, "PNG")
-                saved_image_paths.append(
-                    f"{doc_stem}_images/{filename}"
-                )
+                saved_image_paths.append(f"{doc_stem}_images/{filename}")
 
-            update(
-                f"Saved table {table_idx}...",
-                pct
-            )
+            update(f"Saved table {table_idx}...", pct)
 
     update("Exporting markdown...", 70)
 
     md_path = output_dir / f"{doc_stem}-with-image-refs.md"
 
-    md_text = doc.export_to_markdown(
-        image_mode=ImageRefMode.PLACEHOLDER
-    )
+    md_text = doc.export_to_markdown(image_mode=ImageRefMode.PLACEHOLDER)
 
     update("Injecting image references into markdown...", 82)
 
     for rel_path in saved_image_paths:
-        md_text = md_text.replace(
-            "<!-- image -->",
-            f"![]({rel_path})",
-            1
-        )
+        md_text = md_text.replace("<!-- image -->", f"![]({rel_path})", 1)
 
     md_path.write_text(md_text, encoding="utf-8")
 
@@ -121,21 +101,12 @@ def convert_pdf(source: Path, output_dir: Path, progress_callback=None):
 
 def main():
 
-    parser = argparse.ArgumentParser(
-        description="Convert PDF to markdown with extracted images."
-    )
+    parser = argparse.ArgumentParser(description="Convert PDF to markdown with extracted images.")
+
+    parser.add_argument("pdf_path", type=str, help="Path to input PDF file")
 
     parser.add_argument(
-        "pdf_path",
-        type=str,
-        help="Path to input PDF file"
-    )
-
-    parser.add_argument(
-        "--output_dir",
-        type=str,
-        default="data/manuals_converted",
-        help="Directory to save outputs"
+        "--output_dir", type=str, default="data/manuals_converted", help="Directory to save outputs"
     )
 
     args = parser.parse_args()

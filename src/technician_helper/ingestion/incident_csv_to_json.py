@@ -1,9 +1,13 @@
-# Usage:
-# python create_incident_json.py data/logs/predictive-maintenance-incident-log.csv
+"""Convert a predictive-maintenance incident CSV into embedding-ready JSON records.
 
-import json
+    python -m technician_helper.ingestion.incident_csv_to_json \\
+        data/logs/predictive-maintenance-incident-log.csv
+"""
+
 import argparse
+import json
 from pathlib import Path
+
 import pandas as pd
 
 
@@ -90,7 +94,6 @@ def build_incident_text(row: dict) -> str:
         sentences.append(f"Failure description: {row['failure_description']}.")
 
     if row.get("sensor_id") or row.get("sensor_type") or row.get("sensor_value") is not None:
-
         sensor_parts = ["Sensor"]
 
         if row.get("sensor_id"):
@@ -148,51 +151,30 @@ def csv_to_incident_json(csv_path: Path, json_path: Path, delimiter: str):
     records = []
 
     for _, row in df.iterrows():
-
         row_dict = row.to_dict()
 
         record = {
-
             "chunk_id": f"incident_{row_dict['incident_id']}",
             "source": "incident_log",
             "record_type": "maintenance_incident",
-
             "incident_id": row_dict.get("incident_id"),
             "machine_id": row_dict.get("machine_id"),
             "machine_type": row_dict.get("machine_type"),
             "location": row_dict.get("location"),
-
-            "incident_datetime": to_rfc3339_utc(
-                row_dict.get("incident_datetime")
-            ),
-
-            "resolved_datetime": to_rfc3339_utc(
-                row_dict.get("resolved_datetime")
-            ),
-
+            "incident_datetime": to_rfc3339_utc(row_dict.get("incident_datetime")),
+            "resolved_datetime": to_rfc3339_utc(row_dict.get("resolved_datetime")),
             "incident_type": row_dict.get("incident_type"),
             "failure_code": row_dict.get("failure_code"),
             "failure_description": row_dict.get("failure_description"),
-
             "sensor_id": row_dict.get("sensor_id"),
             "sensor_type": row_dict.get("sensor_type"),
-            "sensor_value": to_float_or_none(
-                row_dict.get("sensor_value")
-            ),
-
+            "sensor_value": to_float_or_none(row_dict.get("sensor_value")),
             "maintenance_type": row_dict.get("maintenance_type"),
             "maintenance_action": row_dict.get("maintenance_action"),
-
-            "downtime_minutes": to_int_or_none(
-                row_dict.get("downtime_minutes")
-            ),
-
+            "downtime_minutes": to_int_or_none(row_dict.get("downtime_minutes")),
             "reported_by": row_dict.get("reported_by"),
             "resolution_status": row_dict.get("resolution_status"),
-            "cost_estimate": to_float_or_none(
-                row_dict.get("cost_estimate")
-            ),
-
+            "cost_estimate": to_float_or_none(row_dict.get("cost_estimate")),
             "root_cause": row_dict.get("root_cause"),
         }
 
@@ -210,46 +192,26 @@ def csv_to_incident_json(csv_path: Path, json_path: Path, delimiter: str):
 
 def main():
 
-    parser = argparse.ArgumentParser(
-        description="Convert incident CSV into chunked JSON records."
-    )
+    parser = argparse.ArgumentParser(description="Convert incident CSV into chunked JSON records.")
+
+    parser.add_argument("csv_path", type=str, help="Path to incident CSV file")
 
     parser.add_argument(
-        "csv_path",
-        type=str,
-        help="Path to incident CSV file"
+        "--output_json", type=str, default="data/logs/incident_chunks.json", help="Output JSON path"
     )
 
-    parser.add_argument(
-        "--output_json",
-        type=str,
-        default="data/logs/incident_chunks.json",
-        help="Output JSON path"
-    )
-
-    parser.add_argument(
-        "--delimiter",
-        type=str,
-        default=",",
-        help="CSV delimiter (default: comma)"
-    )
+    parser.add_argument("--delimiter", type=str, default=",", help="CSV delimiter (default: comma)")
 
     args = parser.parse_args()
 
     csv_path = Path(args.csv_path)
 
     if not csv_path.exists():
-        raise FileNotFoundError(
-            f"CSV file not found: {csv_path}"
-        )
+        raise FileNotFoundError(f"CSV file not found: {csv_path}")
 
     json_path = Path(args.output_json)
 
-    csv_to_incident_json(
-        csv_path=csv_path,
-        json_path=json_path,
-        delimiter=args.delimiter
-    )
+    csv_to_incident_json(csv_path=csv_path, json_path=json_path, delimiter=args.delimiter)
 
 
 if __name__ == "__main__":

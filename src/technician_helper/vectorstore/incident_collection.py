@@ -1,7 +1,10 @@
-import weaviate
-from weaviate.classes.config import Configure, Property, DataType
+"""Create the incident log collection schema in Weaviate."""
 
-COLLECTION_NAME = "IncidentLogs"
+from weaviate.classes.config import Configure, DataType, Property
+
+from technician_helper.clients import weaviate_client
+from technician_helper.config import settings
+
 DELETE_IF_EXISTS = False
 
 
@@ -18,14 +21,11 @@ def create_incidentlogs_collection(client, collection_name: str):
 
     client.collections.create(
         name=collection_name,
-        vector_config=[
-            Configure.Vectors.self_provided(name="incident_vector")
-        ],
+        vector_config=[Configure.Vectors.self_provided(name="incident_vector")],
         properties=[
             Property(name="chunk_id", data_type=DataType.TEXT),
             Property(name="source", data_type=DataType.TEXT),
             Property(name="record_type", data_type=DataType.TEXT),
-
             Property(name="incident_id", data_type=DataType.TEXT),
             Property(name="machine_id", data_type=DataType.TEXT),
             Property(name="machine_type", data_type=DataType.TEXT),
@@ -34,36 +34,28 @@ def create_incidentlogs_collection(client, collection_name: str):
             Property(name="incident_type", data_type=DataType.TEXT),
             Property(name="failure_code", data_type=DataType.TEXT),
             Property(name="failure_description", data_type=DataType.TEXT),
-
             Property(name="sensor_id", data_type=DataType.TEXT),
             Property(name="sensor_type", data_type=DataType.TEXT),
             Property(name="sensor_value", data_type=DataType.NUMBER),
-
             Property(name="maintenance_type", data_type=DataType.TEXT),
             Property(name="maintenance_action", data_type=DataType.TEXT),
-
             Property(name="downtime_minutes", data_type=DataType.INT),
             Property(name="reported_by", data_type=DataType.TEXT),
             Property(name="resolved_datetime", data_type=DataType.DATE),
             Property(name="resolution_status", data_type=DataType.TEXT),
             Property(name="cost_estimate", data_type=DataType.NUMBER),
             Property(name="root_cause", data_type=DataType.TEXT),
-
             Property(name="text", data_type=DataType.TEXT),
-        ]
+        ],
     )
     print(f"Created collection: {collection_name}")
 
 
 def main():
-    client = weaviate.connect_to_local(
-        host="localhost",
-        port=8080,
-        grpc_port=50051
-    )
+    client = weaviate_client()
 
     try:
-        create_incidentlogs_collection(client, COLLECTION_NAME)
+        create_incidentlogs_collection(client, settings.incident_collection)
     finally:
         client.close()
 

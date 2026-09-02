@@ -1,56 +1,60 @@
 from __future__ import annotations
 
 import json
-import os
 import re
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
-from dotenv import load_dotenv
-from huggingface_hub import InferenceClient
+from technician_helper.config import settings
 
-from query_manuals import semantic_query as query_manuals
-from query_incident_logs import semantic_query as query_incident_logs
-
-load_dotenv()
+if TYPE_CHECKING:
+    from huggingface_hub import InferenceClient
 
 
 SCHEMA_EXAMPLE = {
     "likely_causes": [
         {
             "cause": "bearing wear",
-            "why": "A similar historical incident with the same fault pattern identified bearing wear as the root cause."
+            "why": (
+                "A similar historical incident with the same fault pattern "
+                "identified bearing wear as the root cause."
+            ),
         }
     ],
     "recommended_checks": [
         "Inspect the bearing housing for signs of wear or damage",
-        "Check shaft alignment and coupling condition"
+        "Check shaft alignment and coupling condition",
     ],
     "manual_references": [
         {
             "section_title": "Bearing Inspection",
             "source_pdf": "OEM Manual.pdf",
-            "reason": "This section contains bearing-related inspection guidance relevant to the observed symptoms."
+            "reason": (
+                "This section contains bearing-related inspection guidance "
+                "relevant to the observed symptoms."
+            ),
         }
     ],
     "similar_incidents": [
         {
             "machine_id": "M01",
             "fault_code": "E102",
-            "summary": "Abnormal bearing noise and vibration were resolved by replacing worn bearings and relubricating."
+            "summary": (
+                "Abnormal bearing noise and vibration were resolved by "
+                "replacing worn bearings and relubricating."
+            ),
         }
     ],
-    "clarifying_questions": [
-        "Is the vibration continuous or only after restart?"
-    ],
+    "clarifying_questions": ["Is the vibration continuous or only after restart?"],
     "escalation_needed": False,
     "escalation_reason": "",
     "confidence": "medium",
-    "evidence_gaps": []
+    "evidence_gaps": [],
 }
 
 
 def _update_stage(
-    stage_callback: Optional[Callable[[str, str], None]],
+    stage_callback: Callable[[str, str], None] | None,
     stage: str,
     message: str,
 ) -> None:
@@ -76,7 +80,7 @@ def sanitize_retrieval_text(text: str) -> str:
     return cleaned.strip()
 
 
-def stringify_manual_results(results: List[Dict[str, Any]]) -> str:
+def stringify_manual_results(results: list[dict[str, Any]]) -> str:
     if not results:
         return "None"
 
@@ -98,7 +102,7 @@ def stringify_manual_results(results: List[Dict[str, Any]]) -> str:
     return "\n\n".join(blocks)
 
 
-def stringify_incident_results(results: List[Dict[str, Any]]) -> str:
+def stringify_incident_results(results: list[dict[str, Any]]) -> str:
     if not results:
         return "None"
 
@@ -138,7 +142,7 @@ Rules:
 4. recommended_checks must be concise and actionable.
 5. manual_references must be empty if no relevant manual evidence exists.
 6. similar_incidents must include only incidents supported by the retrieved incident output.
-7. escalation_needed should be true only if there is a clear safety or operational reason from the evidence.
+7. escalation_needed is true only if the evidence shows a clear safety or operational reason.
 8. confidence must be exactly one of: low, medium, high
 9. evidence_gaps should list ambiguity, missing details, or lack of fault-specific manual guidance.
 10. Do NOT output keys such as: query, response, answer, notes, explanation, metadata.
@@ -159,11 +163,12 @@ Retrieved manual results:
 
 
 def create_client() -> InferenceClient:
-    hf_token = os.getenv("HF_TOKEN")
-    if not hf_token:
+    from huggingface_hub import InferenceClient
+
+    if not settings.hf_token:
         raise RuntimeError("HF_TOKEN is not set.")
 
-    return InferenceClient(api_key=hf_token)
+    return InferenceClient(api_key=settings.hf_token)
 
 
 def call_llm(
@@ -206,8 +211,7 @@ def call_llm(
 
     if isinstance(content, list):
         content = "".join(
-            part.get("text", "") if isinstance(part, dict) else str(part)
-            for part in content
+            part.get("text", "") if isinstance(part, dict) else str(part) for part in content
         )
 
     content = str(content).strip()
@@ -218,7 +222,7 @@ def call_llm(
     return content
 
 
-def extract_json_object(text: str) -> Dict[str, Any]:
+def extract_json_object(text: str) -> dict[str, Any]:
     text = text.strip()
 
     # Remove fenced code blocks if present
@@ -244,7 +248,7 @@ def extract_json_object(text: str) -> Dict[str, Any]:
     return json.loads(json_text)
 
 
-def validate_output(obj: Dict[str, Any]) -> Dict[str, Any]:
+def validate_output(obj: dict[str, Any]) -> dict[str, Any]:
     required_keys = {
         "likely_causes",
         "recommended_checks",
@@ -310,16 +314,16 @@ def validate_output(obj: Dict[str, Any]) -> Dict[str, Any]:
 
 def run_rag_fusion(
     query: str,
-    manual_paths: Optional[List[str]] = None,
-    log_paths: Optional[List[str]] = None,
-    stage_callback: Optional[Callable[[str, str], None]] = None,
-    model: str = "Qwen/Qwen2.5-7B-Instruct",
+    manual_paths: list[str] | None = None,
+    log_paths: list[str] | None = None,
+    stage_callback: Callable[[str, str], None] | None = None,
+    model: str = settings.llm_model,
     temperature: float = 0.0,
     max_tokens: int = 900,
     top_k_manual: int = 3,
     top_k_logs: int = 3,
     return_debug: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Full troubleshooting pipeline:
     1. Retrieve manual evidence
@@ -328,6 +332,8 @@ def run_rag_fusion(
     4. Call HF model
     5. Extract + validate JSON
     """
+    from technician_helper.retrieval.incidents import semantic_query as query_incident_logs
+    from technician_helper.retrieval.manuals import semantic_query as query_manuals
 
     _update_stage(stage_callback, "Manual Retrieval", "Starting manual retrieval...")
 
@@ -384,18 +390,20 @@ def run_rag_fusion(
     }
 
     if return_debug:
-        output.update({
-            "manual_output": manual_output,
-            "incident_output": incident_output,
-            "prompt": prompt,
-            "raw_llm_text": llm_text,
-        })
+        output.update(
+            {
+                "manual_output": manual_output,
+                "incident_output": incident_output,
+                "prompt": prompt,
+                "raw_llm_text": llm_text,
+            }
+        )
 
     return output
 
-if __name__ == "__main__":
+
+def main() -> None:
     import argparse
-    import json
     import traceback
 
     parser = argparse.ArgumentParser(description="Run troubleshooting RAG pipeline from terminal.")
@@ -433,3 +441,7 @@ if __name__ == "__main__":
         print("\nPIPELINE FAILED\n")
         print(str(e))
         print(traceback.format_exc())
+
+
+if __name__ == "__main__":
+    main()

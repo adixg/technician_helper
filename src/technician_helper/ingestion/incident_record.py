@@ -1,18 +1,12 @@
-import os
+"""Build and upload a single incident record (used by the Streamlit app)."""
+
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
-import weaviate
-from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 
-
-DEFAULT_INCIDENT_COLLECTION = "IncidentLogs"
-DEFAULT_INCIDENT_EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-
-load_dotenv()
-hf_token = os.getenv("HF_TOKEN")
+from technician_helper.clients import weaviate_client
+from technician_helper.config import settings
 
 
 def clean_value(v):
@@ -151,26 +145,20 @@ def build_incident_record_from_form(form_data: dict) -> dict:
         "chunk_id": f"incident_{clean_value(form_data.get('incident_id'))}",
         "source": "incident_log",
         "record_type": "maintenance_incident",
-
         "incident_id": clean_value(form_data.get("incident_id")),
         "machine_id": clean_value(form_data.get("machine_id")),
         "machine_type": clean_value(form_data.get("machine_type")),
         "location": clean_value(form_data.get("location")),
-
         "incident_datetime": to_rfc3339_utc(form_data.get("incident_datetime")),
         "resolved_datetime": to_rfc3339_utc(form_data.get("resolved_datetime")),
-
         "incident_type": clean_value(form_data.get("incident_type")),
         "failure_code": clean_value(form_data.get("failure_code")),
         "failure_description": clean_value(form_data.get("failure_description")),
-
         "sensor_id": clean_value(form_data.get("sensor_id")),
         "sensor_type": clean_value(form_data.get("sensor_type")),
         "sensor_value": to_float_or_none(form_data.get("sensor_value")),
-
         "maintenance_type": clean_value(form_data.get("maintenance_type")),
         "maintenance_action": clean_value(form_data.get("maintenance_action")),
-
         "downtime_minutes": to_int_or_none(form_data.get("downtime_minutes")),
         "reported_by": clean_value(form_data.get("reported_by")),
         "resolution_status": clean_value(form_data.get("resolution_status")),
@@ -184,32 +172,21 @@ def build_incident_record_from_form(form_data: dict) -> dict:
 
 def upload_single_incident_to_weaviate(
     record: dict,
-    collection_name: str = DEFAULT_INCIDENT_COLLECTION,
-    embed_model_name: str = DEFAULT_INCIDENT_EMBED_MODEL,
+    collection_name: str | None = None,
+    embed_model_name: str | None = None,
 ):
     model = SentenceTransformer(
-        embed_model_name,
-        token=hf_token if hf_token else None
+        embed_model_name or settings.embed_model,
+        token=settings.hf_token,
     )
 
-    vector = model.encode(
-        record["text"],
-        normalize_embeddings=True,
-        convert_to_numpy=True
-    ).tolist()
+    vector = model.encode(record["text"], normalize_embeddings=True, convert_to_numpy=True).tolist()
 
-    client = weaviate.connect_to_local(
-        host="localhost",
-        port=8080,
-        grpc_port=50051
-    )
+    client = weaviate_client()
 
     try:
-        collection = client.collections.get(collection_name)
-        collection.data.insert(
-            properties=record,
-            vector={"incident_vector": vector}
-        )
+        collection = client.collections.get(collection_name or settings.incident_collection)
+        collection.data.insert(properties=record, vector={"incident_vector": vector})
     finally:
         client.close()
 
