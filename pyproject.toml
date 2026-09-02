@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "technician-helper"
+version = "0.1.0"
+description = "Retrieval-Augmented Generation assistant that helps maintenance technicians troubleshoot machine faults using OEM manuals and historical incident logs."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Aditya Ghosh" }]
+keywords = ["rag", "weaviate", "streamlit", "maintenance", "troubleshooting"]
+
+dependencies = [
+    "streamlit>=1.38,<2",
+    "pandas>=2.2,<3",
+    "numpy>=1.26",
+    "python-dotenv>=1.0,<2",
+    "pydantic>=2.7,<3",
+    "pydantic-settings>=2.3,<3",
+    "weaviate-client>=4.7,<5",
+    "sentence-transformers>=3.0",
+    "torch>=2.2",
+    "docling>=2.0",
+    "huggingface-hub>=0.24",
+]
+
+[project.optional-dependencies]
+dev = ["ruff>=0.6", "pytest>=8"]
+
+[project.scripts]
+th-pdf-to-markdown = "technician_helper.ingestion.pdf_to_markdown:main"
+th-markdown-to-sections = "technician_helper.ingestion.markdown_to_sections:main"
+th-sections-to-chunks = "technician_helper.ingestion.sections_to_chunks:main"
+th-incident-csv = "technician_helper.ingestion.incident_csv_to_json:main"
+th-create-manual-collection = "technician_helper.vectorstore.manual_collection:main"
+th-create-incident-collection = "technician_helper.vectorstore.incident_collection:main"
+th-upload-manuals = "technician_helper.vectorstore.upload_manual_chunks:main"
+th-upload-incidents = "technician_helper.vectorstore.upload_incident_json:main"
+th-query-manuals = "technician_helper.retrieval.manuals:main"
+th-query-incidents = "technician_helper.retrieval.incidents:main"
+th-rag-fusion = "technician_helper.pipeline.rag_fusion:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/technician_helper"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
