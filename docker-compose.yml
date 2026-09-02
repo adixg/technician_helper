@@ -1,0 +1,34 @@
+# Brings up Weaviate and the Streamlit app together.
+#   HF_TOKEN=<your token> docker compose up --build
+#
+# The app is then on http://localhost:8501
+
+services:
+  weaviate:
+    # Pin to a specific version for reproducibility.
+    image: semitechnologies/weaviate:latest
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    environment:
+      QUERY_DEFAULTS_LIMIT: 20
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      DEFAULT_VECTORIZER_MODULE: none
+      PERSISTENCE_DATA_PATH: /var/lib/weaviate
+    restart: unless-stopped
+
+  app:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      WEAVIATE_HOST: weaviate
+      HF_TOKEN: ${HF_TOKEN:-}
+    depends_on:
+      - weaviate
+    restart: unless-stopped
+
+volumes:
+  weaviate_data:
