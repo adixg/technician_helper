@@ -1,13 +1,21 @@
 import copy
+import json
 
 import pytest
 
 from technician_helper.pipeline.rag_fusion import (
     SCHEMA_EXAMPLE,
+    answer_with_repair,
     extract_json_object,
     sanitize_retrieval_text,
     validate_output,
 )
+
+
+def _valid_json_text() -> str:
+    obj = copy.deepcopy(SCHEMA_EXAMPLE)
+    obj["clarifying_questions"] = list(obj["clarifying_questions"])
+    return json.dumps(obj)
 
 
 class TestExtractJsonObject:
@@ -78,3 +86,36 @@ class TestSanitizeRetrievalText:
     def test_strips_prompt_leakage(self):
         dirty = "Do not output reasoning. Something else entirely"
         assert "Do not output reasoning" not in sanitize_retrieval_text(dirty)
+
+
+class TestAnswerWithRepair:
+    def test_succeeds_first_try(self):
+        calls = []
+
+        def call_fn(prompt):
+            calls.append(prompt)
+            return _valid_json_text()
+
+        obj, raw = answer_with_repair(call_fn, "base prompt", repair_attempts=2)
+        assert obj["confidence"] == "medium"
+        assert len(calls) == 1
+
+    def test_repairs_after_invalid_output(self):
+        outputs = iter(["not json at all", "{}", _valid_json_text()])
+        prompts = []
+
+        def call_fn(prompt):
+            prompts.append(prompt)
+            return next(outputs)
+
+        obj, _ = answer_with_repair(call_fn, "base prompt", repair_attempts=2)
+        assert obj["confidence"] == "medium"
+        assert len(prompts) == 3
+        assert "rejected" in prompts[1]  # error fed back into the retry prompt
+
+    def test_gives_up_after_repair_budget(self):
+        def call_fn(_prompt):
+            return "still not json"
+
+        with pytest.raises(ValueError, match="did not return valid JSON after 2"):
+            answer_with_repair(call_fn, "base prompt", repair_attempts=1)

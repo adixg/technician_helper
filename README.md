@@ -244,6 +244,25 @@ and can be overridden via environment variables or `.env`:
 | `INCIDENT_COLLECTION`   | `IncidentLogs`                             | Incident log collection name        |
 | `EMBED_MODEL`           | `sentence-transformers/all-MiniLM-L6-v2`   | Embedding model                     |
 | `LLM_MODEL`             | `Qwen/Qwen2.5-7B-Instruct`                 | Fusion LLM (HF Inference API)       |
+| `LLM_TIMEOUT`           | `60`                                       | Per-request LLM timeout (seconds)   |
+| `LLM_MAX_ATTEMPTS`      | `3`                                        | Network retries per LLM call        |
+| `LLM_REPAIR_ATTEMPTS`   | `2`                                        | Re-asks when the model breaks schema|
+| `WEAVIATE_CONNECT_ATTEMPTS` | `5`                                   | Connection retries (with backoff)   |
+| `LOG_LEVEL`             | `INFO`                                     | Root log level                      |
+
+### Reliability behaviour
+
+- **Embedding model is loaded once** per process and reused across queries (it was
+  previously reloaded on every request).
+- **The Weaviate connection is shared** process-wide, opened with retry + backoff, and
+  closed at exit.
+- **LLM calls** run under a timeout and are retried on transient network errors; if the
+  response fails schema validation, the pipeline re-asks with the error up to
+  `LLM_REPAIR_ATTEMPTS` times.
+- **Uploads are idempotent** — records use deterministic UUIDs keyed on `chunk_id`, so
+  re-running an ingest upserts instead of creating duplicates.
+- **The app fails fast** at startup with a clear message if `HF_TOKEN` is missing or
+  Weaviate is unreachable.
 
 ---
 

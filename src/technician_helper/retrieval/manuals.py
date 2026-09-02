@@ -7,11 +7,9 @@ import argparse
 import json
 from collections.abc import Callable
 
-import torch
-from sentence_transformers import SentenceTransformer
-
 from technician_helper.clients import weaviate_client
 from technician_helper.config import settings
+from technician_helper.embeddings import get_embedding_model, resolve_device
 
 
 def _update_stage(stage_callback: Callable[[str], None] | None, message: str) -> None:
@@ -28,16 +26,9 @@ def semantic_query(
     Semantic search over ManualChunk collection.
     Returns top-k manual chunk records as a list of property dicts.
     """
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    _update_stage(stage_callback, f"Loading manual embedding model on {resolve_device()}")
 
-    _update_stage(stage_callback, f"Loading manual embedding model on {device}")
-
-    model = SentenceTransformer(
-        settings.embed_model,
-        trust_remote_code=True,
-        device=device,
-        token=settings.hf_token,
-    )
+    model = get_embedding_model()
 
     _update_stage(stage_callback, "Encoding manual query")
 
@@ -49,38 +40,30 @@ def semantic_query(
 
     _update_stage(stage_callback, "Connecting to manual database")
 
-    client = weaviate_client()
+    collection = weaviate_client().collections.get(settings.manual_collection)
 
-    try:
-        collection = client.collections.get(settings.manual_collection)
+    _update_stage(stage_callback, "Searching manual vectors")
 
-        _update_stage(stage_callback, "Searching manual vectors")
+    response = collection.query.near_vector(
+        near_vector=qvec,
+        limit=top_k,
+        return_properties=[
+            "chunk_id",
+            "section_title",
+            "chunk_text",
+            "images",
+            "source_pdf_file",
+            "manufacturer",
+            "machine",
+        ],
+    )
 
-        response = collection.query.near_vector(
-            near_vector=qvec,
-            limit=top_k,
-            return_properties=[
-                "chunk_id",
-                "section_title",
-                "chunk_text",
-                "images",
-                "source_pdf_file",
-                "manufacturer",
-                "machine",
-            ],
-        )
+    _update_stage(stage_callback, "Processing manual retrieval results")
 
-        _update_stage(stage_callback, "Processing manual retrieval results")
+    results = [obj.properties for obj in response.objects]
 
-        results = []
-        for obj in response.objects:
-            results.append(obj.properties)
-
-        _update_stage(stage_callback, "Manual retrieval complete")
-        return results
-
-    finally:
-        client.close()
+    _update_stage(stage_callback, "Manual retrieval complete")
+    return results
 
 
 def print_results(results: list[dict]) -> None:

@@ -4,11 +4,9 @@ import argparse
 import json
 from pathlib import Path
 
-import torch
-from sentence_transformers import SentenceTransformer
-
 from technician_helper.clients import weaviate_client
 from technician_helper.config import settings
+from technician_helper.embeddings import get_embedding_model, resolve_device
 
 
 def load_chunks(path: Path) -> dict:
@@ -36,18 +34,10 @@ def upload_manual_chunks(
     doc = load_chunks(chunks_json_path)
     chunks = doc["chunks"]
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Using device: {device}")
-    print(f"Loading embedding model: {embed_model}")
+    device = resolve_device()
+    update(f"Loading embedding model {embed_model} on {device}...", 72)
 
-    update(f"Loading embedding model on {device}...", 72)
-
-    model = SentenceTransformer(
-        embed_model,
-        trust_remote_code=True,
-        device=device,
-        token=settings.hf_token,
-    )
+    model = get_embedding_model(embed_model, device)
 
     texts = [c["chunk_text"] for c in chunks]
     total = len(texts)
@@ -74,42 +64,40 @@ def upload_manual_chunks(
 
     update("Connecting to Weaviate...", 91)
 
-    client = weaviate_client()
+    from weaviate.util import generate_uuid5
 
-    try:
-        collection = client.collections.get(collection_name)
+    collection = weaviate_client().collections.get(collection_name)
 
-        update("Uploading chunks to Weaviate...", 92)
+    update("Uploading chunks to Weaviate...", 92)
 
-        with collection.batch.dynamic() as batch:
-            for idx, (chunk, vec) in enumerate(zip(chunks, vectors, strict=False), start=1):
-                batch.add_object(
-                    properties={
-                        "chunk_id": chunk["chunk_id"],
-                        "source_pdf_file": doc.get("source_pdf_file"),
-                        "source_md_file": doc.get("source_md_file"),
-                        "machine": doc.get("machine"),
-                        "manufacturer": doc.get("manufacturer"),
-                        "manual_type": doc.get("manual_type"),
-                        "section_id": chunk["section_id"],
-                        "section_title": chunk["section_title"],
-                        "chunk_index_within_section": chunk["chunk_index_within_section"],
-                        "chunk_text": chunk["chunk_text"],
-                        "images": chunk["images"],
-                    },
-                    vector=vec.tolist(),
-                )
+    # Deterministic UUIDs keyed on chunk_id make re-runs idempotent (upsert,
+    # not duplicate).
+    with collection.batch.dynamic() as batch:
+        for idx, (chunk, vec) in enumerate(zip(chunks, vectors, strict=False), start=1):
+            batch.add_object(
+                properties={
+                    "chunk_id": chunk["chunk_id"],
+                    "source_pdf_file": doc.get("source_pdf_file"),
+                    "source_md_file": doc.get("source_md_file"),
+                    "machine": doc.get("machine"),
+                    "manufacturer": doc.get("manufacturer"),
+                    "manual_type": doc.get("manual_type"),
+                    "section_id": chunk["section_id"],
+                    "section_title": chunk["section_title"],
+                    "chunk_index_within_section": chunk["chunk_index_within_section"],
+                    "chunk_text": chunk["chunk_text"],
+                    "images": chunk["images"],
+                },
+                vector=vec.tolist(),
+                uuid=generate_uuid5(chunk["chunk_id"]),
+            )
 
-                if idx % 5 == 0 or idx == len(chunks):
-                    pct = 92 + int((idx / max(len(chunks), 1)) * 8)
-                    update(f"Uploaded {idx}/{len(chunks)} chunks...", pct)
+            if idx % 5 == 0 or idx == len(chunks):
+                pct = 92 + int((idx / max(len(chunks), 1)) * 8)
+                update(f"Uploaded {idx}/{len(chunks)} chunks...", pct)
 
-        update(f"Upload complete. Uploaded {len(chunks)} chunks.", 100)
-
-        print(f"Uploaded {len(chunks)} chunks to '{collection_name}'")
-
-    finally:
-        client.close()
+    update(f"Upload complete. Uploaded {len(chunks)} chunks.", 100)
+    print(f"Uploaded {len(chunks)} chunks to '{collection_name}'")
 
 
 def main():

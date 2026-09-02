@@ -14,10 +14,13 @@ from technician_helper.ingestion.incident_record import (
 from technician_helper.ingestion.markdown_to_sections import generate_sections_json
 from technician_helper.ingestion.pdf_to_markdown import convert_pdf
 from technician_helper.ingestion.sections_to_chunks import generate_chunks_json
+from technician_helper.logging_config import configure_logging
 from technician_helper.pipeline.rag_fusion import run_rag_fusion
 from technician_helper.retrieval.incidents import semantic_query as query_incident_logs
 from technician_helper.retrieval.manuals import semantic_query as query_manuals
 from technician_helper.vectorstore.upload_manual_chunks import upload_manual_chunks
+
+configure_logging()
 
 st.set_page_config(
     page_title="Technician Helper",
@@ -38,6 +41,16 @@ st.markdown(
 
 st.title("Technician Helper")
 st.caption("Ingest manuals, add incidents, run retrieval, and do troubleshooting.")
+
+try:
+    settings.require(weaviate=True)
+except RuntimeError as exc:
+    st.error(str(exc))
+    st.info(
+        "Set `HF_TOKEN` in your `.env`, start Weaviate (`docker compose up weaviate`), "
+        "then reload this page."
+    )
+    st.stop()
 
 DEFAULT_EXAMPLES = [
     "Machine M01 has fault code E102 with vibration and abnormal bearing noise. "

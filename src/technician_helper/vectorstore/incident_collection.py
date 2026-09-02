@@ -52,12 +52,7 @@ def create_incidentlogs_collection(client, collection_name: str):
 
 
 def main():
-    client = weaviate_client()
-
-    try:
-        create_incidentlogs_collection(client, settings.incident_collection)
-    finally:
-        client.close()
+    create_incidentlogs_collection(weaviate_client(), settings.incident_collection)
 
 
 if __name__ == "__main__":

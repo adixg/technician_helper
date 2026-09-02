@@ -7,10 +7,9 @@ import argparse
 import json
 from pathlib import Path
 
-from sentence_transformers import SentenceTransformer
-
 from technician_helper.clients import weaviate_client
 from technician_helper.config import settings
+from technician_helper.embeddings import get_embedding_model
 
 DEFAULT_JSON_PATH = "data/logs/incident_chunks.json"
 
@@ -21,19 +20,26 @@ def load_records(json_path: Path) -> list[dict]:
 
 
 def embed_and_upload(client, collection_name: str, records: list[dict], model_name: str):
+    from weaviate.util import generate_uuid5
+
     collection = client.collections.get(collection_name)
 
-    print(f"Loading embedding model: {model_name}")
-    model = SentenceTransformer(model_name, token=settings.hf_token)
+    model = get_embedding_model(model_name)
 
     texts = [r["text"] for r in records]
     vectors = model.encode(
         texts, normalize_embeddings=True, convert_to_numpy=True, show_progress_bar=True
     ).tolist()
 
+    # Deterministic UUIDs keyed on chunk_id -> re-running upserts instead of
+    # inserting duplicates.
     with collection.batch.dynamic() as batch:
         for record, vector in zip(records, vectors, strict=False):
-            batch.add_object(properties=record, vector={"incident_vector": vector})
+            batch.add_object(
+                properties=record,
+                vector={"incident_vector": vector},
+                uuid=generate_uuid5(record["chunk_id"]),
+            )
 
     failed = collection.batch.failed_objects
     if failed:
@@ -75,17 +81,12 @@ def main():
 
     records = load_records(json_path)
 
-    client = weaviate_client()
-
-    try:
-        embed_and_upload(
-            client=client,
-            collection_name=args.collection_name,
-            records=records,
-            model_name=args.embed_model,
-        )
-    finally:
-        client.close()
+    embed_and_upload(
+        client=weaviate_client(),
+        collection_name=args.collection_name,
+        records=records,
+        model_name=args.embed_model,
+    )
 
 
 if __name__ == "__main__":

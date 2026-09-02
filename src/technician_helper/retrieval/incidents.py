@@ -7,10 +7,9 @@ import argparse
 import json
 from collections.abc import Callable
 
-from sentence_transformers import SentenceTransformer
-
 from technician_helper.clients import weaviate_client
 from technician_helper.config import settings
+from technician_helper.embeddings import get_embedding_model
 
 
 def _update_stage(stage_callback: Callable[[str], None] | None, message: str) -> None:
@@ -29,41 +28,30 @@ def semantic_query(
     """
     _update_stage(stage_callback, "Connecting to incident database")
 
-    client = weaviate_client()
+    collection = weaviate_client().collections.get(settings.incident_collection)
 
-    try:
-        _update_stage(stage_callback, "Loading incident embedding model")
+    _update_stage(stage_callback, "Loading incident embedding model")
 
-        collection = client.collections.get(settings.incident_collection)
+    model = get_embedding_model()
 
-        model = SentenceTransformer(
-            settings.embed_model,
-            token=settings.hf_token,
-        )
+    _update_stage(stage_callback, "Encoding incident query")
 
-        _update_stage(stage_callback, "Encoding incident query")
+    query_vector = model.encode(query_text).tolist()
 
-        query_vector = model.encode(query_text).tolist()
+    _update_stage(stage_callback, "Searching incident vectors")
 
-        _update_stage(stage_callback, "Searching incident vectors")
+    response = collection.query.near_vector(
+        near_vector=query_vector,
+        limit=top_k,
+        target_vector="incident_vector",
+    )
 
-        response = collection.query.near_vector(
-            near_vector=query_vector,
-            limit=top_k,
-            target_vector="incident_vector",
-        )
+    _update_stage(stage_callback, "Processing incident retrieval results")
 
-        _update_stage(stage_callback, "Processing incident retrieval results")
+    results = [obj.properties for obj in response.objects]
 
-        results = []
-        for obj in response.objects:
-            results.append(obj.properties)
-
-        _update_stage(stage_callback, "Incident retrieval complete")
-        return results
-
-    finally:
-        client.close()
+    _update_stage(stage_callback, "Incident retrieval complete")
+    return results
 
 
 def print_results(results: list[dict]) -> None:

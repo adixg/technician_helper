@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from technician_helper.config import settings
+from technician_helper.retry import retry_call
 
 if TYPE_CHECKING:
     from huggingface_hub import InferenceClient
+
+log = logging.getLogger(__name__)
 
 
 SCHEMA_EXAMPLE = {
@@ -168,7 +172,7 @@ def create_client() -> InferenceClient:
     if not settings.hf_token:
         raise RuntimeError("HF_TOKEN is not set.")
 
-    return InferenceClient(api_key=settings.hf_token)
+    return InferenceClient(api_key=settings.hf_token, timeout=settings.llm_timeout)
 
 
 def call_llm(
@@ -178,30 +182,37 @@ def call_llm(
     temperature: float = 0.0,
     max_tokens: int = 900,
 ) -> str:
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "/set nothink\n"
-                    "/no_think\n"
-                    "You are a maintenance troubleshooting assistant. "
-                    "Return only one valid JSON object matching the required schema. "
-                    "Do not add markdown or extra text. "
-                    "Do not output reasoning. "
-                    "Do not output <think>. "
-                    "Do not output explanations. "
-                    "Do not output extra keys."
-                ),
-            },
-            {
-                "role": "user",
-                "content": prompt,
-            },
-        ],
-        temperature=temperature,
-        max_tokens=max_tokens,
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "/set nothink\n"
+                "/no_think\n"
+                "You are a maintenance troubleshooting assistant. "
+                "Return only one valid JSON object matching the required schema. "
+                "Do not add markdown or extra text. "
+                "Do not output reasoning. "
+                "Do not output <think>. "
+                "Do not output explanations. "
+                "Do not output extra keys."
+            ),
+        },
+        {
+            "role": "user",
+            "content": prompt,
+        },
+    ]
+
+    response = retry_call(
+        lambda: client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        ),
+        attempts=settings.llm_max_attempts,
+        base_delay=2.0,
+        description=f"LLM call ({model})",
     )
 
     content = response.choices[0].message.content
@@ -312,6 +323,50 @@ def validate_output(obj: dict[str, Any]) -> dict[str, Any]:
     return obj
 
 
+def parse_llm_response(text: str) -> dict[str, Any]:
+    """Extract and schema-validate the JSON object from raw model output."""
+    return validate_output(extract_json_object(text))
+
+
+def answer_with_repair(
+    call_fn: Callable[[str], str],
+    base_prompt: str,
+    *,
+    repair_attempts: int = 2,
+    stage_callback: Callable[[str, str], None] | None = None,
+) -> tuple[dict[str, Any], str]:
+    """Call the model and, if the output breaks the schema, re-ask with the error.
+
+    ``call_fn`` maps a prompt to raw model text (and may itself retry on network
+    errors). Returns ``(validated_object, raw_text)``; raises ``ValueError`` if
+    no attempt produced valid JSON.
+    """
+    prompt = base_prompt
+    last_err: Exception | None = None
+
+    for attempt in range(1, repair_attempts + 2):
+        text = call_fn(prompt)
+        try:
+            return parse_llm_response(text), text
+        except (ValueError, json.JSONDecodeError) as err:
+            last_err = err
+            log.warning("LLM output rejected (attempt %d): %s", attempt, err)
+            _update_stage(
+                stage_callback,
+                "Post-Processing",
+                f"Model output invalid (attempt {attempt}); re-asking. {err}",
+            )
+            prompt = (
+                f"{base_prompt}\n\n"
+                f"Your previous response was rejected: {err}\n"
+                "Return ONLY the corrected JSON object with exactly the required keys."
+            )
+
+    raise ValueError(
+        f"Model did not return valid JSON after {repair_attempts + 1} attempt(s): {last_err}"
+    )
+
+
 def run_rag_fusion(
     query: str,
     manual_paths: list[str] | None = None,
@@ -365,21 +420,18 @@ def run_rag_fusion(
     _update_stage(stage_callback, "LLM Call", f"Calling model: {model}")
 
     client = create_client()
-    llm_text = call_llm(
-        client=client,
-        model=model,
-        prompt=prompt,
-        temperature=temperature,
-        max_tokens=max_tokens,
+    result_obj, llm_text = answer_with_repair(
+        lambda p: call_llm(
+            client=client,
+            model=model,
+            prompt=p,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        ),
+        base_prompt=prompt,
+        repair_attempts=settings.llm_repair_attempts,
+        stage_callback=stage_callback,
     )
-
-    _update_stage(stage_callback, "Post-Processing", "Extracting JSON from model output...")
-
-    result_obj = extract_json_object(llm_text)
-
-    _update_stage(stage_callback, "Validation", "Validating schema...")
-
-    result_obj = validate_output(result_obj)
 
     _update_stage(stage_callback, "Complete", "Troubleshooting pipeline finished successfully.")
 
@@ -405,6 +457,10 @@ def run_rag_fusion(
 def main() -> None:
     import argparse
     import traceback
+
+    from technician_helper.logging_config import configure_logging
+
+    configure_logging()
 
     parser = argparse.ArgumentParser(description="Run troubleshooting RAG pipeline from terminal.")
 

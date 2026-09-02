@@ -3,10 +3,10 @@
 from pathlib import Path
 
 import pandas as pd
-from sentence_transformers import SentenceTransformer
 
 from technician_helper.clients import weaviate_client
 from technician_helper.config import settings
+from technician_helper.embeddings import get_embedding_model
 
 
 def clean_value(v):
@@ -175,20 +175,20 @@ def upload_single_incident_to_weaviate(
     collection_name: str | None = None,
     embed_model_name: str | None = None,
 ):
-    model = SentenceTransformer(
-        embed_model_name or settings.embed_model,
-        token=settings.hf_token,
-    )
+    from weaviate.util import generate_uuid5
 
+    model = get_embedding_model(embed_model_name)
     vector = model.encode(record["text"], normalize_embeddings=True, convert_to_numpy=True).tolist()
 
-    client = weaviate_client()
+    collection = weaviate_client().collections.get(collection_name or settings.incident_collection)
 
-    try:
-        collection = client.collections.get(collection_name or settings.incident_collection)
-        collection.data.insert(properties=record, vector={"incident_vector": vector})
-    finally:
-        client.close()
+    # Idempotent on chunk_id: replace an existing record rather than duplicating.
+    uid = generate_uuid5(record["chunk_id"])
+    payload = {"properties": record, "vector": {"incident_vector": vector}}
+    if collection.data.exists(uid):
+        collection.data.replace(uuid=uid, **payload)
+    else:
+        collection.data.insert(uuid=uid, **payload)
 
 
 def append_incident_to_csv(record: dict, csv_path: str):

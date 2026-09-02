@@ -40,6 +40,16 @@ class Settings(BaseSettings):
     embed_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     llm_model: str = "Qwen/Qwen2.5-7B-Instruct"
 
+    # --- Reliability ---------------------------------------------------
+    llm_timeout: float = 60.0
+    llm_max_attempts: int = 3  # network retries per LLM call
+    llm_repair_attempts: int = 2  # re-asks when the model breaks the schema
+    weaviate_connect_attempts: int = 5
+    weaviate_connect_backoff: float = 1.0
+
+    # --- Observability -----------------------------------------------
+    log_level: str = "INFO"
+
     # --- Data layout ---------------------------------------------------
     data_dir: Path = Path("data")
 
@@ -62,6 +72,25 @@ class Settings(BaseSettings):
     @property
     def logs_dir(self) -> Path:
         return self.data_dir / "logs"
+
+    def require(self, *, weaviate: bool = False) -> None:
+        """Fail fast on missing runtime prerequisites.
+
+        Always checks credentials; also probes Weaviate when ``weaviate=True``.
+        Raises ``RuntimeError`` listing every problem found.
+        """
+        problems: list[str] = []
+        if not self.hf_token:
+            problems.append("HF_TOKEN is not set (needed for embeddings and the LLM).")
+        if weaviate:
+            from technician_helper.clients import weaviate_ready
+
+            if not weaviate_ready():
+                problems.append(
+                    f"Weaviate is not reachable at {self.weaviate_host}:{self.weaviate_http_port}."
+                )
+        if problems:
+            raise RuntimeError("Configuration problem(s):\n  - " + "\n  - ".join(problems))
 
 
 settings = Settings()
