@@ -10,6 +10,8 @@ __pycache__/
 .devcontainer/
 tests/
 scripts/
+docs/
+evals/
 
 # Local / regenerable data
 weaviate_data/

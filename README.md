@@ -12,6 +12,15 @@ logs (CSV) into a vector database, then answers free-text troubleshooting questi
 a **structured, evidence-grounded response** — likely causes, recommended checks, relevant
 manual sections, and similar past incidents — served through a Streamlit web app.
 
+> **Background** — this began as the [Tractian Generative AI internship case](docs/tractian-genai-internship-case.pdf)
+> (design deck, 6 pages). The deck proposes the full system — hybrid BM25 + vector
+> retrieval with cross-encoder reranking, a multi-tenant vector/relational split, a
+> LangGraph agent with session memory, and in-product integration points. **This
+> repository implements the retrieval-and-structuring core of that design**: vector
+> retrieval over separate manual and incident collections, an LLM fusion step that
+> returns a schema-validated JSON answer, a Streamlit UX, and the evaluation +
+> CI tooling around it.
+
 ---
 
 ## Table of contents
@@ -127,6 +136,7 @@ technician_helper/
 │   │   └── rag_fusion.py              # full troubleshooting pipeline
 │   └── evals/                         # metrics, runner, report, `th-eval` CLI
 ├── evals/                            # golden dataset, fixtures, thresholds, baseline
+├── docs/                             # the original Tractian internship case (design deck)
 ├── scripts/check_ollama.py           # ad-hoc HF Inference API connectivity check
 ├── tests/                            # pytest unit tests
 └── data/
