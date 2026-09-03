@@ -14,7 +14,7 @@ keywords = ["rag", "weaviate", "streamlit", "maintenance", "troubleshooting"]
 
 dependencies = [
     "streamlit>=1.38,<2",
-    "pandas>=2.2,<3",
+    "pandas>=2.2,<4",
     "numpy>=1.26",
     "python-dotenv>=1.0,<2",
     "pydantic>=2.7,<3",
