@@ -1,5 +1,9 @@
 # 🛠️ Technician Helper
 
+[![CI](https://github.com/adixg/technician_helper/actions/workflows/ci.yml/badge.svg)](https://github.com/adixg/technician_helper/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 > A Retrieval-Augmented Generation (RAG) assistant that helps maintenance technicians
 > troubleshoot machine faults using OEM manuals and historical incident logs.
 
