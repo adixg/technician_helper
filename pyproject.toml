@@ -27,7 +27,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["ruff>=0.6", "pytest>=8"]
+dev = ["ruff>=0.6", "pytest>=8", "pytest-cov>=5"]
+tracking = ["mlflow>=2.14"]
 
 [project.scripts]
 th-pdf-to-markdown = "technician_helper.ingestion.pdf_to_markdown:main"
@@ -41,6 +42,8 @@ th-upload-incidents = "technician_helper.vectorstore.upload_incident_json:main"
 th-query-manuals = "technician_helper.retrieval.manuals:main"
 th-query-incidents = "technician_helper.retrieval.incidents:main"
 th-rag-fusion = "technician_helper.pipeline.rag_fusion:main"
+th-eval = "technician_helper.evals.cli:main"
+th-runs = "technician_helper.tracking:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/technician_helper"]
@@ -56,3 +59,10 @@ select = ["E", "F", "I", "W", "UP", "B"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.coverage.run]
+source = ["technician_helper"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError"]

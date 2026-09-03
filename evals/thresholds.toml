@@ -1,0 +1,15 @@
+# Regression gate for `th-eval score --gate` and the CI eval job.
+#
+# A run fails the gate if any aggregate metric falls below its floor, or if a
+# "higher is better" metric regresses from the baseline by more than
+# max_regression.
+
+max_regression = 0.05
+
+[floors]
+recall_at_k = 0.50
+hit_rate = 0.60
+schema_valid = 0.85
+groundedness = 0.55
+field_match = 0.65
+completeness = 0.80

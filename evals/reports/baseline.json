@@ -1,0 +1,268 @@
+{
+  "dataset": "golden",
+  "n": 10,
+  "aggregate": {
+    "recall_at_k": 0.8,
+    "hit_rate": 0.9,
+    "mrr": 0.7833,
+    "schema_valid": 0.9,
+    "groundedness": 0.8667,
+    "field_match": 0.9,
+    "completeness": 0.85,
+    "error_rate": 0.1,
+    "latency_ms_total": 834.3
+  },
+  "per_record": {
+    "q01": {
+      "recall_at_k": 1.0,
+      "hit_rate": 1.0,
+      "mrr": 1.0,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 1.0,
+      "error_rate": 0.0,
+      "latency_ms_total": 1080.0
+    },
+    "q02": {
+      "recall_at_k": 1.0,
+      "hit_rate": 1.0,
+      "mrr": 0.5,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 1.0,
+      "error_rate": 0.0,
+      "latency_ms_total": 1020.0
+    },
+    "q03": {
+      "recall_at_k": 1.0,
+      "hit_rate": 1.0,
+      "mrr": 1.0,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 1.0,
+      "error_rate": 0.0,
+      "latency_ms_total": 850.0
+    },
+    "q04": {
+      "recall_at_k": 0.5,
+      "hit_rate": 1.0,
+      "mrr": 0.3333333333333333,
+      "schema_valid": 1.0,
+      "groundedness": 0.6666666666666666,
+      "field_match": 1.0,
+      "completeness": 1.0,
+      "error_rate": 0.0,
+      "latency_ms_total": 940.0
+    },
+    "q05": {
+      "recall_at_k": 1.0,
+      "hit_rate": 1.0,
+      "mrr": 1.0,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 1.0,
+      "error_rate": 0.0,
+      "latency_ms_total": 875.0
+    },
+    "q06": {
+      "recall_at_k": 1.0,
+      "hit_rate": 1.0,
+      "mrr": 1.0,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 1.0,
+      "error_rate": 0.0,
+      "latency_ms_total": 855.0
+    },
+    "q07": {
+      "recall_at_k": 1.0,
+      "hit_rate": 1.0,
+      "mrr": 1.0,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 1.0,
+      "error_rate": 0.0,
+      "latency_ms_total": 985.0
+    },
+    "q08": {
+      "recall_at_k": 0.5,
+      "hit_rate": 1.0,
+      "mrr": 1.0,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 1.0,
+      "error_rate": 0.0,
+      "latency_ms_total": 998.0
+    },
+    "q09": {
+      "recall_at_k": 0.0,
+      "hit_rate": 0.0,
+      "mrr": 0.0,
+      "schema_valid": 0.0,
+      "groundedness": 0.0,
+      "field_match": 0.0,
+      "completeness": 0.0,
+      "error_rate": 1.0,
+      "latency_ms_total": 0.0
+    },
+    "q10": {
+      "recall_at_k": 1.0,
+      "hit_rate": 1.0,
+      "mrr": 1.0,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 0.5,
+      "error_rate": 0.0,
+      "latency_ms_total": 740.0
+    }
+  },
+  "per_slice": {
+    "category=alignment": {
+      "recall_at_k": 1.0,
+      "hit_rate": 1.0,
+      "mrr": 0.5,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 1.0,
+      "error_rate": 0.0,
+      "latency_ms_total": 1020.0
+    },
+    "category=bearing": {
+      "recall_at_k": 0.75,
+      "hit_rate": 1.0,
+      "mrr": 1.0,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 1.0,
+      "error_rate": 0.0,
+      "latency_ms_total": 1039.0
+    },
+    "category=brake": {
+      "recall_at_k": 1.0,
+      "hit_rate": 1.0,
+      "mrr": 1.0,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 1.0,
+      "error_rate": 0.0,
+      "latency_ms_total": 875.0
+    },
+    "category=electrical": {
+      "recall_at_k": 0.25,
+      "hit_rate": 0.5,
+      "mrr": 0.1667,
+      "schema_valid": 0.5,
+      "groundedness": 0.3333,
+      "field_match": 0.5,
+      "completeness": 0.5,
+      "error_rate": 0.5,
+      "latency_ms_total": 470.0
+    },
+    "category=grounding": {
+      "recall_at_k": 1.0,
+      "hit_rate": 1.0,
+      "mrr": 1.0,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 1.0,
+      "error_rate": 0.0,
+      "latency_ms_total": 850.0
+    },
+    "category=seal": {
+      "recall_at_k": 1.0,
+      "hit_rate": 1.0,
+      "mrr": 1.0,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 1.0,
+      "error_rate": 0.0,
+      "latency_ms_total": 985.0
+    },
+    "category=unknown": {
+      "recall_at_k": 1.0,
+      "hit_rate": 1.0,
+      "mrr": 1.0,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 0.5,
+      "error_rate": 0.0,
+      "latency_ms_total": 740.0
+    },
+    "category=vibration": {
+      "recall_at_k": 1.0,
+      "hit_rate": 1.0,
+      "mrr": 1.0,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 1.0,
+      "error_rate": 0.0,
+      "latency_ms_total": 855.0
+    },
+    "machine_type=grinder": {
+      "recall_at_k": 1.0,
+      "hit_rate": 1.0,
+      "mrr": 1.0,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 1.0,
+      "error_rate": 0.0,
+      "latency_ms_total": 865.0
+    },
+    "machine_type=motor": {
+      "recall_at_k": 0.5,
+      "hit_rate": 0.75,
+      "mrr": 0.5833,
+      "schema_valid": 0.75,
+      "groundedness": 0.6667,
+      "field_match": 0.75,
+      "completeness": 0.75,
+      "error_rate": 0.25,
+      "latency_ms_total": 697.0
+    },
+    "machine_type=pump": {
+      "recall_at_k": 1.0,
+      "hit_rate": 1.0,
+      "mrr": 0.8333,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 1.0,
+      "error_rate": 0.0,
+      "latency_ms_total": 1028.3333
+    },
+    "machine_type=unknown": {
+      "recall_at_k": 1.0,
+      "hit_rate": 1.0,
+      "mrr": 1.0,
+      "schema_valid": 1.0,
+      "groundedness": 1.0,
+      "field_match": 1.0,
+      "completeness": 0.5,
+      "error_rate": 0.0,
+      "latency_ms_total": 740.0
+    }
+  },
+  "meta": {
+    "k": 5,
+    "git_sha": "9fc3e3e",
+    "generated_at": "2026-09-03T18:00:50+00:00",
+    "llm_model": "Qwen/Qwen2.5-7B-Instruct",
+    "embed_model": "sentence-transformers/all-MiniLM-L6-v2"
+  }
+}

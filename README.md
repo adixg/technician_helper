@@ -20,6 +20,7 @@ manual sections, and similar past incidents — served through a Streamlit web a
 - [Data pipelines](#data-pipelines)
 - [Running the app](#running-the-app)
 - [Configuration](#configuration)
+- [Evaluation](#evaluation)
 - [Development](#development)
 - [Module reference](#module-reference)
 
@@ -100,6 +101,9 @@ technician_helper/
 ├── src/technician_helper/
 │   ├── config.py                      # Centralised settings (env-overridable)
 │   ├── clients.py                     # Shared Weaviate client factory
+│   ├── embeddings.py                  # Cached SentenceTransformer loader
+│   ├── retry.py                       # Backoff helper
+│   ├── tracking.py                    # Local experiment tracking (+ optional MLflow)
 │   ├── app.py                         # Streamlit application
 │   ├── ingestion/
 │   │   ├── pdf_to_markdown.py         # PDF → Markdown (Docling)
@@ -115,8 +119,10 @@ technician_helper/
 │   ├── retrieval/
 │   │   ├── manuals.py                 # semantic search over ManualChunk
 │   │   └── incidents.py               # semantic search over IncidentLogs
-│   └── pipeline/
-│       └── rag_fusion.py              # full troubleshooting pipeline
+│   ├── pipeline/
+│   │   └── rag_fusion.py              # full troubleshooting pipeline
+│   └── evals/                         # metrics, runner, report, `th-eval` CLI
+├── evals/                            # golden dataset, fixtures, thresholds, baseline
 ├── scripts/check_ollama.py           # ad-hoc HF Inference API connectivity check
 ├── tests/                            # pytest unit tests
 └── data/
@@ -249,6 +255,9 @@ and can be overridden via environment variables or `.env`:
 | `LLM_REPAIR_ATTEMPTS`   | `2`                                        | Re-asks when the model breaks schema|
 | `WEAVIATE_CONNECT_ATTEMPTS` | `5`                                   | Connection retries (with backoff)   |
 | `LOG_LEVEL`             | `INFO`                                     | Root log level                      |
+| `EVAL_K`               | `5`                                        | Retrieval cutoff for recall@k / MRR |
+| `MLFLOW_ENABLED`       | `false`                                    | Also log eval runs to MLflow        |
+| `RUNS_DIR`             | `runs`                                     | Local experiment-tracking store     |
 
 ### Reliability behaviour
 
@@ -266,14 +275,36 @@ and can be overridden via environment variables or `.env`:
 
 ---
 
+## Evaluation
+
+`th-eval` scores the pipeline against a labelled golden dataset and gates
+regressions. Metrics cover **retrieval** (recall@k, hit-rate, MRR), **answer
+quality** (schema validity, groundedness, field match, completeness), and
+**errors / latency**, with a per-slice breakdown (`machine_type`, `category`).
+
+```bash
+th-eval score                                              # offline — recompute from committed fixtures
+th-eval score --baseline evals/reports/baseline.json --gate  # fail on regression (used in CI)
+th-eval run                                                # live pipeline; refresh fixtures + log the run
+th-runs                                                    # eval metrics over time
+```
+
+Committed fixtures (`evals/fixtures/`) let `th-eval score` and CI run without
+Weaviate or a token. Each `run` logs params + aggregate metrics to
+`runs/index.jsonl` (and to MLflow when `MLFLOW_ENABLED=true`). Full details and
+metric definitions: [`EVALUATION.md`](EVALUATION.md).
+
+---
+
 ## Development
 
 ```bash
 pip install -e ".[dev]"
 
-pytest            # run the unit test suite
-ruff check .      # lint
-ruff format .     # format
+pytest --cov=technician_helper   # unit tests + coverage
+ruff check .                     # lint
+ruff format .                    # format
+th-eval score                    # offline evaluation
 ```
 
 ---

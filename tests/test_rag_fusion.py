@@ -96,8 +96,9 @@ class TestAnswerWithRepair:
             calls.append(prompt)
             return _valid_json_text()
 
-        obj, raw = answer_with_repair(call_fn, "base prompt", repair_attempts=2)
+        obj, raw, attempts = answer_with_repair(call_fn, "base prompt", repair_attempts=2)
         assert obj["confidence"] == "medium"
+        assert attempts == 1
         assert len(calls) == 1
 
     def test_repairs_after_invalid_output(self):
@@ -108,8 +109,9 @@ class TestAnswerWithRepair:
             prompts.append(prompt)
             return next(outputs)
 
-        obj, _ = answer_with_repair(call_fn, "base prompt", repair_attempts=2)
+        obj, _, attempts = answer_with_repair(call_fn, "base prompt", repair_attempts=2)
         assert obj["confidence"] == "medium"
+        assert attempts == 3
         assert len(prompts) == 3
         assert "rejected" in prompts[1]  # error fed back into the retry prompt
 

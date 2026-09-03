@@ -334,12 +334,12 @@ def answer_with_repair(
     *,
     repair_attempts: int = 2,
     stage_callback: Callable[[str, str], None] | None = None,
-) -> tuple[dict[str, Any], str]:
+) -> tuple[dict[str, Any], str, int]:
     """Call the model and, if the output breaks the schema, re-ask with the error.
 
     ``call_fn`` maps a prompt to raw model text (and may itself retry on network
-    errors). Returns ``(validated_object, raw_text)``; raises ``ValueError`` if
-    no attempt produced valid JSON.
+    errors). Returns ``(validated_object, raw_text, attempts_used)``; raises
+    ``ValueError`` if no attempt produced valid JSON.
     """
     prompt = base_prompt
     last_err: Exception | None = None
@@ -347,7 +347,7 @@ def answer_with_repair(
     for attempt in range(1, repair_attempts + 2):
         text = call_fn(prompt)
         try:
-            return parse_llm_response(text), text
+            return parse_llm_response(text), text, attempt
         except (ValueError, json.JSONDecodeError) as err:
             last_err = err
             log.warning("LLM output rejected (attempt %d): %s", attempt, err)
@@ -387,8 +387,12 @@ def run_rag_fusion(
     4. Call HF model
     5. Extract + validate JSON
     """
+    import time
+
     from technician_helper.retrieval.incidents import semantic_query as query_incident_logs
     from technician_helper.retrieval.manuals import semantic_query as query_manuals
+
+    t_start = time.perf_counter()
 
     _update_stage(stage_callback, "Manual Retrieval", "Starting manual retrieval...")
 
@@ -406,6 +410,8 @@ def run_rag_fusion(
         stage_callback=lambda msg: _update_stage(stage_callback, "Log Retrieval", msg),
     )
 
+    t_retrieved = time.perf_counter()
+
     _update_stage(stage_callback, "Prompt Build", "Formatting retrieved evidence...")
 
     manual_output = sanitize_retrieval_text(stringify_manual_results(manual_results))
@@ -420,7 +426,7 @@ def run_rag_fusion(
     _update_stage(stage_callback, "LLM Call", f"Calling model: {model}")
 
     client = create_client()
-    result_obj, llm_text = answer_with_repair(
+    result_obj, llm_text, repair_attempts = answer_with_repair(
         lambda p: call_llm(
             client=client,
             model=model,
@@ -433,12 +439,20 @@ def run_rag_fusion(
         stage_callback=stage_callback,
     )
 
+    t_end = time.perf_counter()
+
     _update_stage(stage_callback, "Complete", "Troubleshooting pipeline finished successfully.")
 
     output = {
         "result": result_obj,
         "manual_results": manual_results,
         "incident_results": incident_results,
+        "repair_attempts": repair_attempts,
+        "timings": {
+            "retrieval_ms": round((t_retrieved - t_start) * 1000, 1),
+            "llm_ms": round((t_end - t_retrieved) * 1000, 1),
+            "total_ms": round((t_end - t_start) * 1000, 1),
+        },
     }
 
     if return_debug:

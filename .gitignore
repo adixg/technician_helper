@@ -45,3 +45,9 @@ Thumbs.db
 
 # Scratch pipeline output
 /results/
+
+# Experiment tracking + generated eval reports (baseline.json is kept)
+/runs/
+/evals/reports/*
+!/evals/reports/baseline.json
+/mlruns/

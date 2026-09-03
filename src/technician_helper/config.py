@@ -50,8 +50,17 @@ class Settings(BaseSettings):
     # --- Observability -----------------------------------------------
     log_level: str = "INFO"
 
+    # --- Evaluation & tracking --------------------------------------
+    eval_k: int = 5  # retrieval cutoff for recall@k / hit-rate
+    mlflow_enabled: bool = False  # also log eval runs to MLflow when true
+    runs_dir: Path = Path("runs")  # local experiment-tracking store
+
     # --- Data layout ---------------------------------------------------
     data_dir: Path = Path("data")
+
+    @property
+    def evals_dir(self) -> Path:
+        return Path("evals")
 
     @property
     def manuals_dir(self) -> Path:
